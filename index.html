@@ -32,33 +32,14 @@
             font-size: 2em; /* 섹션 제목 글자 크기 */
         }
 
-        h3 {
-            margin-top: 15px;
-            font-size: 1.5em; /* 하위 섹션 제목 글자 크기 */
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
+        input, button {
             margin: 10px 0;
-        }
-
-        li {
-            margin: 10px 0;
-            font-size: 1.2em; /* 체크리스트 항목 글자 크기 */
-        }
-
-        input[type="checkbox"] {
-            transform: scale(1.5); /* 체크박스 크기 조정 */
-            margin-right: 10px; /* 체크박스와 텍스트 간의 간격 */
+            padding: 10px;
+            font-size: 1em;
+            width: 100%;
         }
 
         button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-top: 20px;
-            font-size: 1.2em;
             background-color: #4CAF50;
             color: white;
             border: none;
@@ -69,116 +50,433 @@
         button:hover {
             background-color: #45a049;
         }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 10px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        /* 체크박스 열과 항목 열의 너비 고정 */
+        th:first-child, td:first-child {
+            width: 50px; /* 체크박스 열 너비 */
+        }
+
+        th:last-child, td:last-child {
+            width: calc(100% - 50px); /* 항목 열 너비 */
+        }
+
+        input[type="checkbox"] {
+            transform: scale(1.5); /* 체크박스 크기 조정 */
+            margin-right: 10px; /* 체크박스와 텍스트 간의 간격 */
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>여행 체크리스트</h1>
 
+        <h2>사용자명 입력</h2>
+        <input type="text" id="username" placeholder="사용자명을 입력하세요">
+        <button id="confirm-button">확인</button>
+
         <h2>2주 이상 여행 시 준비물</h2>
-        <ul>
-            <li><input type="checkbox" id="sim-card"> 유심은 1주일 전 주문</li>
-            <li><input type="checkbox" id="GLN"> GLN 연결할 계좌 체크 미리</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody id="checklist">
+                <tr>
+                    <td><input type="checkbox" id="sim-card"></td>
+                    <td>유심은 1주일 전 주문</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="GLN"></td>
+                    <td>GLN 연결할 계좌 체크 미리</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>위치</h2>
-        <ul>
-            <li><input type="checkbox" id="starbucks"> 에까마이 쎄일 근처 24시 스타벅스</li>
-            <li><input type="checkbox" id="health"> 24시 헬스 (동키)</li>
-            <li><input type="checkbox" id="taxi"> 수완나품 볼트택시 (1층이 아닌 4층)</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" id="starbucks"></td>
+                    <td>에까마이 쎄일 근처 24시 스타벅스</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="health"></td>
+                    <td>24시 헬스 (동키)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="taxi"></td>
+                    <td>수완나품 볼트택시 (1층이 아닌 4층)</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>옷</h2>
-        <ul id="clothes-list">
-            <li><input type="checkbox" id="hat"> 모자</li>
-            <li><input type="checkbox" id="tshirt"> 티셔츠</li>
-            <li><input type="checkbox" id="shirt"> 셔츠</li>
-            <li><input type="checkbox" id="sleeveless"> 민소매</li>
-            <li><input type="checkbox" id="pants"> 기본 바지</li>
-            <li><input type="checkbox" id="comfortable-pants"> 편한 바지</li>
-            <li><input type="checkbox" id="underwear"> 팬티</li>
-            <li><input type="checkbox" id="socks"> 양말</li>
-            <li><input type="checkbox" id="shoes"> 신발</li>
-            <li><input type="checkbox" id="sandals"> 샌들 (슬리퍼)</li>
-            <li><input type="checkbox" id="indoor-slippers"> 실내용 슬리퍼</li>
-            <li><input type="checkbox" id="sneakers"> 운동화</li>
-            <li><input type="checkbox" id="swimsuit"> 수영복</li>
-            <li><input type="checkbox" id="goggles"> 물안경</li>
-            <li><input type="checkbox" id="umbrella"> 3단 우산</li>
-            <li><input type="checkbox" id="sunglasses"> 선글라스</li>
-            <li><input type="checkbox" id="bottle-opener"> 병따개</li>
-            <li><input type="checkbox" id="massage-ball"> 마사지볼</li>
-            <li><input type="checkbox" id="mat"> 돗자리</li>
-            <li><input type="checkbox" id="phone-holder"> 폰 거치대</li>
-            <li><input type="checkbox" id="necklace"> 목걸이</li>
-            <li><input type="checkbox" id="ring"> 반지</li>
-            <li><input type="checkbox" id="ring"> 팔찌</li>
-            <li><input type="checkbox" id="tarpaulin-bag"> 타포린백</li>
-            <li><input type="checkbox" id="clutch-bag"> 클러치백</li>
-            <li><input type="checkbox" id="yoga-mat"> 요가매트</li>
-            <li><input type="checkbox" id="foam-roller"> 폼롤러</li>
-            <li><input type="checkbox" id="abs-roller"> ABS 롤</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody id="clothes-list">
+                <tr>
+                    <td><input type="checkbox" id="hat"></td>
+                    <td>모자</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="tshirt"></td>
+                    <td>티셔츠</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="shirt"></td>
+                    <td>셔츠</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sleeveless"></td>
+                    <td>민소매</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="pants"></td>
+                    <td>기본 바지</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="comfortable-pants"></td>
+                    <td>편한 바지</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="underwear"></td>
+                    <td>팬티</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="socks"></td>
+                    <td>양말</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="shoes"></td>
+                    <td>신발</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sandals"></td>
+                    <td>샌들 (슬리퍼)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="indoor-slippers"></td>
+                    <td>실내용 슬리퍼</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sneakers"></td>
+                    <td>운동화</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="swimsuit"></td>
+                    <td>수영복</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="goggles"></td>
+                    <td>물안경</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="umbrella"></td>
+                    <td>3단 우산</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sunglasses"></td>
+                    <td>선글라스</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="bottle-opener"></td>
+                    <td>병따개</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="massage-ball"></td>
+                    <td>마사지볼</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="mat"></td>
+                    <td>돗자리</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="phone-holder"></td>
+                    <td>폰 거치대</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="necklace"></td>
+                    <td>목걸이</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="ring"></td>
+                    <td>반지</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="bracelet"></td>
+                    <td>팔찌</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="tarpaulin-bag"></td>
+                    <td>타포린백</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="clutch-bag"></td>
+                    <td>클러치백</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="yoga-mat"></td>
+                    <td>요가매트</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="foam-roller"></td>
+                    <td>폼롤러</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="abs-roller"></td>
+                    <td>ABS 롤</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>돈</h2>
-        <ul>
-            <li><input type="checkbox" id="wallet"> 지갑</li>
-            <li><input type="checkbox" id="exchange"> 환전</li>
-            <li><input type="checkbox" id="exk-card"> EXK 카드</li>
-            <li><input type="checkbox" id="passport"> 여권</li>
-            <li><input type="checkbox" id="id-card"> 주민등록증</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" id="wallet"></td>
+                    <td>지갑</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="exchange"></td>
+                    <td>환전</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="exk-card"></td>
+                    <td>EXK 카드</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="passport"></td>
+                    <td>여권</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="id-card"></td>
+                    <td>주민등록증</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>전자기기</h2>
-        <ul>
-            <li><input type="checkbox" id="phone-holder-electronics"> 폰 거치대</li>
-            <li><input type="checkbox" id="projector"> 프로젝터</li>
-            <li><input type="checkbox" id="tablet"> 태블릿 (+충전기)</li>
-            <li><input type="checkbox" id="bluetooth-earphones"> 블루투스 이어폰 (+충전기)</li>
-            <li><input type="checkbox" id="power-bank"> 보조 배터리 (+충전기)</li>
-            <li><input type="checkbox" id="smartphone-charger"> 스마트폰 충전기</li>
-            <li><input type="checkbox" id="bluetooth-remote"> 블루투스 카메라 리모콘</li>
-            <li><input type="checkbox" id="laptop"> 태블릿</li>
-            <li><input type="checkbox" id="laptop"> 노트북</li>
-            <li><input type="checkbox" id="mouse"> 마우스</li>
-            <li><input type="checkbox" id="mousepad"> 마우스패드</li>
-            <li><input type="checkbox" id="multi-tap"> 멀티탭</li>
-            <li><input type="checkbox" id="tripod"> 삼각대</li>
-            <li><input type="checkbox" id="sim-clip"> 유심 교환 클립</li>
-            <li><input type="checkbox" id="scale"> 체중계</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" id="phone-holder-electronics"></td>
+                    <td>폰 거치대</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="projector"></td>
+                    <td>프로젝터</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="tablet"></td>
+                    <td>태블릿 (+충전기)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="bluetooth-earphones"></td>
+                    <td>블루투스 이어폰 (+충전기)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="power-bank"></td>
+                    <td>보조 배터리 (+충전기)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="smartphone-charger"></td>
+                    <td>스마트폰 충전기</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="bluetooth-remote"></td>
+                    <td>블루투스 카메라 리모콘</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="laptop"></td>
+                    <td>노트북</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="mouse"></td>
+                    <td>마우스</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="mousepad"></td>
+                    <td>마우스패드</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="multi-tap"></td>
+                    <td>멀티탭</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="tripod"></td>
+                    <td>삼각대</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sim-clip"></td>
+                    <td>유심 교환 클립</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="scale"></td>
+                    <td>체중계</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>목욕/청소</h2>
-        <ul>
-            <li><input type="checkbox" id="toothbrush"> 칫솔</li>
-            <li><input type="checkbox" id="hair-tie"> 머리끈</li>
-            <li><input type="checkbox" id="shower-towel"> 한국식 샤워 타올</li>
-            <li><input type="checkbox" id="lotion"> 로션</li>
-            <li><input type="checkbox" id="sports-towel"> 스포츠 타올</li>
-            <li><input type="checkbox" id="shampoo"> 샴푸</li>
-            <li><input type="checkbox" id="body-wash"> 바디워시</li>
-            <li><input type="checkbox" id="cleansing"> 클렌징</li>
-            <li><input type="checkbox" id="razor"> 면도기</li>
-            <li><input type="checkbox" id="hair-dryer"> 헤어 드라이어</li>
-            <li><input type="checkbox" id="hair-spray"> 헤어 스프레이</li>
-            <li><input type="checkbox" id="perfume"> 향수</li>
-            <li><input type="checkbox" id="perfume-bottle"> 향수 공병</li>
-            <li><input type="checkbox" id="lip-balm"> 립밤</li>
-            <li><input type="checkbox" id="nail-clipper-set"> 손톱 깎이 세트</li>
-            <li><input type="checkbox" id="hand-mirror"> 손 거울</li>
-            <li><input type="checkbox" id="lint-roller"> 돌돌이 (full 1롤 충분/1달)</li>
-            <li><input type="checkbox" id="wet-wipes"> 물티슈</li>
-            <li><input type="checkbox" id="tanning-oil"> 태닝 오일</li>
-            <li><input type="checkbox" id="dye"> 염색약</li>
-            <li><input type="checkbox" id="towel"> 수건</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" id="toothbrush"></td>
+                    <td>칫솔</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="hair-tie"></td>
+                    <td>머리끈</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="shower-towel"></td>
+                    <td>한국식 샤워 타올</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="lotion"></td>
+                    <td>로션</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="sports-towel"></td>
+                    <td>스포츠 타올</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="shampoo"></td>
+                    <td>샴푸</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="body-wash"></td>
+                    <td>바디워시</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="cleansing"></td>
+                    <td>클렌징</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="razor"></td>
+                    <td>면도기</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="hair-dryer"></td>
+                    <td>헤어 드라이어</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="hair-spray"></td>
+                    <td>헤어 스프레이</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="perfume"></td>
+                    <td>향수</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="perfume-bottle"></td>
+                    <td>향수 공병</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="lip-balm"></td>
+                    <td>립밤</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="nail-clipper-set"></td>
+                    <td>손톱 깎이 세트</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="hand-mirror"></td>
+                    <td>손 거울</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="lint-roller"></td>
+                    <td>돌돌이 (full 1롤 충분/1달)</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="wet-wipes"></td>
+                    <td>물티슈</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="tanning-oil"></td>
+                    <td>태닝 오일</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="dye"></td>
+                    <td>염색약</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="towel"></td>
+                    <td>수건</td>
+                </tr>
+            </tbody>
+        </table>
 
         <h2>약</h2>
-        <ul>
-            <li><input type="checkbox" id="repellent"> 버물리</li>
-            <li><input type="checkbox" id="digestive"> 소화제</li>
-            <li><input type="checkbox" id="cold-medication"> 감기약</li>
-        </ul>
+        <table>
+            <thead>
+                <tr>
+                    <th>체크</th>
+                    <th>항목</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox" id="repellent"></td>
+                    <td>버물리</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="digestive"></td>
+                    <td>소화제</td>
+                </tr>
+                <tr>
+                    <td><input type="checkbox" id="cold-medication"></td>
+                    <td>감기약</td>
+                </tr>
+            </tbody>
+        </table>
 
         <button id="save-button">저장</button>
     </div>
@@ -186,23 +484,51 @@
     <script>
         // 체크박스 상태 로드
         document.addEventListener("DOMContentLoaded", function() {
+            const username = localStorage.getItem('username');
+            if (username) {
+                document.getElementById('username').value = username;
+                loadChecklist(username);
+            }
+
+            // 사용자명을 확인 버튼 클릭 시 저장
+            document.getElementById('confirm-button').addEventListener('click', function() {
+                const username = document.getElementById('username').value;
+                if (username) {
+                    localStorage.setItem('username',                    username);
+                    loadChecklist(username);
+                } else {
+                    alert("사용자명을 입력하세요.");
+                }
+            });
+
             const checkboxes = document.querySelectorAll("input[type='checkbox']");
             checkboxes.forEach(checkbox => {
-                const id = checkbox.id;
-                checkbox.checked = localStorage.getItem(id) === 'true';
                 checkbox.addEventListener('change', function() {
-                    localStorage.setItem(id, this.checked);
+                    const currentUser = localStorage.getItem('username');
+                    localStorage.setItem(`${currentUser}-${this.id}`, this.checked);
                 });
             });
         });
 
-        // 저장 버튼 클릭 시 체크박스 상태 저장
-        document.getElementById('save-button').addEventListener('click', function() {
+        function loadChecklist(username) {
             const checkboxes = document.querySelectorAll("input[type='checkbox']");
             checkboxes.forEach(checkbox => {
-                localStorage.setItem(checkbox.id, checkbox.checked);
+                checkbox.checked = localStorage.getItem(`${username}-${checkbox.id}`) === 'true';
             });
-            alert("체크리스트가 저장되었습니다!");
+        }
+
+        // 저장 버튼 클릭 시 체크박스 상태 저장
+        document.getElementById('save-button').addEventListener('click', function() {
+            const username = localStorage.getItem('username');
+            if (username) {
+                const checkboxes = document.querySelectorAll("input[type='checkbox']");
+                checkboxes.forEach(checkbox => {
+                    localStorage.setItem(`${username}-${checkbox.id}`, checkbox.checked);
+                });
+                alert("체크리스트가 저장되었습니다!");
+            } else {
+                alert("사용자명을 먼저 입력하세요.");
+            }
         });
     </script>
 </body>
