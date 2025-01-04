@@ -15,7 +15,7 @@
         .container {
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: 80vh;
         }
         .row {
             flex: 1;
@@ -23,33 +23,33 @@
         }
         .column {
             flex: 1;
-            padding: 20px;
+            padding: 10px;
         }
         .column:nth-child(2) {
             flex: 3; /* 두 번째 열을 3배 크기로 설정 */
         }
         #level {
-            font-size: 40px; /* 레벨 글씨 크기 */
-            margin-top: 20px;
+            font-size: 30px; /* 레벨 글씨 크기 */
+            margin-top: 10px;
         }
         #timer {
-            font-size: 200px; /* 타이머 숫자 크게 설정 */
-            margin: 20px 0;
+            font-size: 130px; /* 타이머 숫자 크게 설정 */
+            margin: 10px 0;
         }
         #breakIndicator {
-            font-size: 50px;
+            font-size: 40px;
             color: red; /* 브레이크 표시 색상 */
             display: none; /* 초기에는 숨김 */
         }
         #controls {
-            margin-top: 20px;
+            margin-top: 10px;
             display: flex;
             flex-direction: row; /* 가로로 배치 */
             justify-content: center; /* 중앙 정렬 */
             align-items: center; /* 수직 중앙 정렬 */
         }
         #progressBar {
-            width: 100%;
+            width: 70%;
             height: 20px;
             background-color: #555;
             cursor: pointer;
@@ -73,15 +73,15 @@
             display: none;
         }
         #nextLevelInfo {
-            font-size: 25px; /* NEXT LEVEL 정보 글씨 크기 */
+            font-size: 20px; /* NEXT LEVEL 정보 글씨 크기 */
             margin-top: 10px;
         }
         #blindsInfo, #anteInfo {
-            font-size: 30px; /* 블라인드 및 앤티 정보 글씨 크기 */
+            font-size: 25px; /* 블라인드 및 앤티 정보 글씨 크기 */
         }
 
         #blindsLabel, #anteLabel {
-            font-size: 30px; /* 블라인드 및 앤티 레이블 글씨 크기 증가 */
+            font-size: 25px; /* 블라인드 및 앤티 레이블 글씨 크기 증가 */
         }
         #elapsed {
             height: 100%;
@@ -91,26 +91,35 @@
             left: 0;
             width: 0;
         }
+#info p {
+    margin: 10px 0; /* 각 p 요소의 상하 간격을 줄임 */
+}
+
+#info span {
+    margin: 0; /* span 요소의 간격을 없앰 */
+    display: inline-block; /* span을 인라인 블록 요소로 설정 */
+    line-height: 1; /* 줄 높이를 1로 설정하여 간격 감소 */
+}
         /* 버튼 스타일 */
         .button {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: black; /* 배경색 검정 */
             border: 2px solid white; /* 흰색 선 */
             cursor: pointer;
             color: white;
-            font-size: 24px;
+            font-size: 15px;
             margin: 0 10px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
         }
         /* 화살표 버튼 스타일 */
         .arrow-button {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: black; /* 배경색 검정 */
             border: 2px solid white; /* 흰색 선 */
             color: white;
-            font-size: 24px;
+            font-size: 15px;
             cursor: pointer;
             margin: 0 10px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
@@ -143,7 +152,7 @@
             background-color: black;
             border: 2px solid white;
             color: white;
-            font-size: 16px;
+            font-size: 14px;
             cursor: pointer;
             margin: 20px 0; /* 위아래 간격 */
             border-radius: 5px;
@@ -155,7 +164,7 @@
     display: none; /* 초기에는 숨김 */
     padding: 20px; /* 패딩 추가 */
     position: absolute; /* 절대 위치 지정 */
-    top: 25%; /* 화면 중앙에 위치 */
+    top: 50%; /* 화면 중앙에 위치 */
     left: 50%; /* 화면 중앙에 위치 */
     transform: translate(-50%, -50%); /* 중앙 정렬 */
     z-index: 10; /* 다른 요소 위에 표시되도록 */
@@ -167,16 +176,16 @@
         <div class="row">
             <div class="column">
                 <div id="info">
-                    <p><span style="font-size: 24px; font-weight: bold;">TOTAL TIME:</span></p>
-                    <span id="totalTime", style="font-size: 24px; font-weight: bold;">00:00</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">TOTAL CHIPS:</span></p>
-                    <span id="totalChips", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">AVR STACK:</span></p>
-                    <span id="avrStack", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">PLAYERS:</span></p>
-                    <span id="currentPlayers", style="font-size: 24px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">NEXT BREAK:</span></p>
-                    <span id="nextBreak", style="font-size: 24px; font-weight: bold;">00:00</span>
+                    <p><span style="font-size: 15px; font-weight: bold;">TOTAL TIME:</span></p>
+                    <span id="totalTime", style="font-size: 15px; font-weight: bold;">00:00</span><br>
+                    <p><span style="font-size: 15px; font-weight: bold;">TOTAL CHIPS:</span></p>
+                    <span id="totalChips", style="font-size: 15px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 15px; font-weight: bold;">AVR STACK:</span></p>
+                    <span id="avrStack", style="font-size: 15px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 15px; font-weight: bold;">PLAYERS:</span></p>
+                    <span id="currentPlayers", style="font-size: 15px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 15px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 15px; font-weight: bold;">NEXT BREAK:</span></p>
+                    <span id="nextBreak", style="font-size: 15px; font-weight: bold;">00:00:00</span>
                 </div>
             </div>
             <div class="column">
