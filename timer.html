@@ -21,10 +21,14 @@
             flex: 1;
             display: flex;
         }
-        .column {
-            flex: 1;
-            padding: 10px;
-        }
+.column {
+    flex: 1;
+    padding: 10px;
+    margin: 0; /* 각 열 간의 간격을 없앰 */
+    display: flex; /* 플렉스 박스 사용 */
+    flex-direction: column; /* 세로 방향으로 정렬 */
+    align-items: center; /* 중앙 정렬 */
+}
         .column:nth-child(2) {
             flex: 3; /* 두 번째 열을 3배 크기로 설정 */
         }
@@ -48,14 +52,14 @@
             justify-content: center; /* 중앙 정렬 */
             align-items: center; /* 수직 중앙 정렬 */
         }
-        #progressBar {
-            width: 70%;
-            height: 20px;
-            background-color: #555;
-            cursor: pointer;
-            position: relative;
-            margin: 20px 0; /* 재생바와 버튼 간격 */
-        }
+#progressBar {
+    width: 50%; 
+    height: 20px;
+    background-color: #555;
+    cursor: pointer;
+    position: relative;
+    margin: 20px 0; /* 재생바와 버튼 간의 간격 */
+}
         #progress {
             height: 100%;
             background-color: rgba(200, 200, 200, 0.5);
