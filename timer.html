@@ -20,10 +20,12 @@
         .row {
             flex: 1;
             display: flex;
+            margin: 0;
         }
         .column {
             flex: 1;
-            padding: 10px;
+            padding: 5px;
+            margin: 0;
         }
         .column:nth-child(2) {
             flex: 3; /* 두 번째 열을 3배 크기로 설정 */
@@ -42,7 +44,7 @@
             display: none; /* 초기에는 숨김 */
         }
         #controls {
-            margin-top: 10px;
+            margin-top: 5px;
             display: flex;
             flex-direction: row; /* 가로로 배치 */
             justify-content: center; /* 중앙 정렬 */
@@ -167,16 +169,16 @@
         <div class="row">
             <div class="column">
                 <div id="info">
-                    <p><span style="font-size: 17px; font-weight: bold;">TOTAL TIME:</span></p>
-                    <span id="totalTime", style="font-size: 17px; font-weight: bold;">00:00</span><br>
-                    <p><span style="font-size: 17px; font-weight: bold;">TOTAL CHIPS:</span></p>
-                    <span id="totalChips", style="font-size: 17px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 17px; font-weight: bold;">AVR STACK:</span></p>
-                    <span id="avrStack", style="font-size: 17px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 17px; font-weight: bold;">PLAYERS:</span></p>
-                    <span id="currentPlayers", style="font-size: 17px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 17px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 17px; font-weight: bold;">NEXT BREAK:</span></p>
-                    <span id="nextBreak", style="font-size: 17px; font-weight: bold;">00:00</span>
+                    <p><span style="font-size: 13px; font-weight: bold;">TOTAL TIME:</span></p>
+                    <span id="totalTime", style="font-size: 13px; font-weight: bold;">00:00</span><br>
+                    <p><span style="font-size: 13px; font-weight: bold;">TOTAL CHIPS:</span></p>
+                    <span id="totalChips", style="font-size: 13px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 13px; font-weight: bold;">AVR STACK:</span></p>
+                    <span id="avrStack", style="font-size: 13px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 13px; font-weight: bold;">PLAYERS:</span></p>
+                    <span id="currentPlayers", style="font-size: 13px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 13px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 13px; font-weight: bold;">NEXT BREAK:</span></p>
+                    <span id="nextBreak", style="font-size: 13px; font-weight: bold;">00:00:00</span>
                 </div>
             </div>
             <div class="column">
