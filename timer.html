@@ -12,18 +12,20 @@
             background-color: black; /* 배경색 검정 */
             color: white; /* 글씨색 하얀색 */
         }
-        .container {
-            display: flex;
-            flex-direction: column;
-            height: 80vh;
-        }
-        .row {
-            flex: 1;
-            display: flex;
-        }
+.container {
+    width: 90%; /* 전체 너비를 90%로 설정 */
+    max-width: 600px; /* 최대 너비 설정 (필요에 따라 조정 가능) */
+    margin: 0 auto; /* 중앙 정렬 */
+    padding: 10px; /* 패딩 줄임 */
+}
+.row {
+    flex: 1;
+    display: flex;
+    margin: 5px 0; /* 열 간의 간격 줄임 */
+}
 .column {
     flex: 1;
-    padding: 10px;
+    padding: 5px;
     margin: 0; /* 각 열 간의 간격을 없앰 */
     display: flex; /* 플렉스 박스 사용 */
     flex-direction: column; /* 세로 방향으로 정렬 */
@@ -54,7 +56,7 @@
         }
 #progressBar {
     width: 50%; 
-    height: 20px;
+    height: 30px;
     background-color: #555;
     cursor: pointer;
     position: relative;
@@ -67,7 +69,7 @@
         }
         #marker {
             width: 10px;
-            height: 20px;
+            height: 35px;
             background-color: white; /* 마커 색상 흰색 */
             position: absolute;
             top: 0;
@@ -77,7 +79,7 @@
             display: none;
         }
         #nextLevelInfo {
-            font-size: 20px; /* NEXT LEVEL 정보 글씨 크기 */
+            font-size: 15px; /* NEXT LEVEL 정보 글씨 크기 */
             margin-top: 10px;
         }
         #blindsInfo, #anteInfo {
@@ -112,7 +114,7 @@
             border: 2px solid white; /* 흰색 선 */
             cursor: pointer;
             color: white;
-            font-size: 15px;
+            font-size: 10px;
             margin: 0 10px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
         }
@@ -123,7 +125,7 @@
             background-color: black; /* 배경색 검정 */
             border: 2px solid white; /* 흰색 선 */
             color: white;
-            font-size: 15px;
+            font-size: 10px;
             cursor: pointer;
             margin: 0 10px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
@@ -144,7 +146,7 @@
         }
         /* 플레이어 조절 버튼 스타일 */
         #playerControls {
-            margin: 20px 0; /* 플레이어 조절 버튼 간격 */
+            margin: 15px 0; /* 플레이어 조절 버튼 간격 */
         }
         /* 정보 스타일 */
         #info {
