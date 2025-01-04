@@ -5,50 +5,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>홀덤 블라인드 타이머</title>
     <style>
-body {
-    font-family: Arial, sans-serif;
-    text-align: center;
-    margin: 0;
-    background-color: black; /* 배경색 검정 */
-    color: white; /* 글씨색 하얀색 */
-    overflow: hidden; /* 스크롤바 숨김 */
-}
-
-.container {
-    display: flex;
-    flex-direction: column;
-    height: 100vh; /* 뷰포트 높이에 맞춤 */
-    max-width: 100%; /* 최대 너비 100% */
-    box-sizing: border-box; /* 패딩과 테두리를 크기에 포함 */
-}
-
-.row {
-    flex: 1;
-    display: flex;
-    flex-wrap: wrap; /* 내용이 넘칠 경우 줄바꿈 */
-}
-
-.column {
-    flex: 1;
-    padding: 2vw; /* 패딩을 뷰포트 너비에 비례하여 설정 */
-}
-
-#level {
-    font-size: 8vw; /* 글씨 크기를 뷰포트 너비에 비례하여 설정 */
-    margin-top: 2vw;
-}
-
-#timer {
-    font-size: 20vw; /* 타이머 숫자 크기 조정 */
-    margin: 2vw 0;
-}
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            background-color: black; /* 배경색 검정 */
+            color: white; /* 글씨색 하얀색 */
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 80vh;
+        }
+        .row {
+            flex: 1;
+            display: flex;
+        }
+        .column {
+            flex: 1;
+            padding: 10px;
+        }
+        .column:nth-child(2) {
+            flex: 3; /* 두 번째 열을 3배 크기로 설정 */
+        }
+        #level {
+            font-size: 30px; /* 레벨 글씨 크기 */
+            margin-top: 10px;
+        }
+        #timer {
+            font-size: 150px; /* 타이머 숫자 크게 설정 */
+            margin: 10px 0;
+        }
         #breakIndicator {
-            font-size: 50px;
+            font-size: 40px;
             color: red; /* 브레이크 표시 색상 */
             display: none; /* 초기에는 숨김 */
         }
         #controls {
-            margin-top: 20px;
+            margin-top: 10px;
             display: flex;
             flex-direction: row; /* 가로로 배치 */
             justify-content: center; /* 중앙 정렬 */
@@ -79,15 +73,15 @@ body {
             display: none;
         }
         #nextLevelInfo {
-            font-size: 25px; /* NEXT LEVEL 정보 글씨 크기 */
+            font-size: 20px; /* NEXT LEVEL 정보 글씨 크기 */
             margin-top: 10px;
         }
         #blindsInfo, #anteInfo {
-            font-size: 30px; /* 블라인드 및 앤티 정보 글씨 크기 */
+            font-size: 25px; /* 블라인드 및 앤티 정보 글씨 크기 */
         }
 
         #blindsLabel, #anteLabel {
-            font-size: 30px; /* 블라인드 및 앤티 레이블 글씨 크기 증가 */
+            font-size: 25px; /* 블라인드 및 앤티 레이블 글씨 크기 증가 */
         }
         #elapsed {
             height: 100%;
@@ -99,26 +93,26 @@ body {
         }
         /* 버튼 스타일 */
         .button {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: black; /* 배경색 검정 */
             border: 2px solid white; /* 흰색 선 */
             cursor: pointer;
             color: white;
-            font-size: 24px;
-            margin: 0 10px; /* 버튼 간격 */
+            font-size: 20px;
+            margin: 0 5px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
         }
         /* 화살표 버튼 스타일 */
         .arrow-button {
-            width: 40px;
-            height: 40px;
+            width: 30px;
+            height: 30px;
             background-color: black; /* 배경색 검정 */
             border: 2px solid white; /* 흰색 선 */
             color: white;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
-            margin: 0 10px; /* 버튼 간격 */
+            margin: 0 5px; /* 버튼 간격 */
             border-radius: 5px; /* 모서리 둥글게 */
         }
 /* 마우스 오버 시 배경색 변경 */
@@ -155,11 +149,11 @@ body {
             border-radius: 5px;
         }
 #pausedIndicator {
-    font-size: 10vw; /* 글씨 크기 증가 */
+    font-size: 120px; /* 글씨 크기 증가 */
     color: red; /* 글씨 색상 */
     border: 15px solid red; /* 빨간 선 */
     display: none; /* 초기에는 숨김 */
-    padding: 2vw; /* 패딩 추가 */
+    padding: 20px; /* 패딩 추가 */
     position: absolute; /* 절대 위치 지정 */
     top: 25%; /* 화면 중앙에 위치 */
     left: 50%; /* 화면 중앙에 위치 */
@@ -173,16 +167,16 @@ body {
         <div class="row">
             <div class="column">
                 <div id="info">
-                    <p><span style="font-size: 24px; font-weight: bold;">TOTAL TIME:</span></p>
-                    <span id="totalTime", style="font-size: 24px; font-weight: bold;">00:00</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">TOTAL CHIPS:</span></p>
-                    <span id="totalChips", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">AVR STACK:</span></p>
-                    <span id="avrStack", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">PLAYERS:</span></p>
-                    <span id="currentPlayers", style="font-size: 24px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 24px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 24px; font-weight: bold;">NEXT BREAK:</span></p>
-                    <span id="nextBreak", style="font-size: 24px; font-weight: bold;">00:00</span>
+                    <p><span style="font-size: 17px; font-weight: bold;">TOTAL TIME:</span></p>
+                    <span id="totalTime", style="font-size: 17px; font-weight: bold;">00:00</span><br>
+                    <p><span style="font-size: 17px; font-weight: bold;">TOTAL CHIPS:</span></p>
+                    <span id="totalChips", style="font-size: 17px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 17px; font-weight: bold;">AVR STACK:</span></p>
+                    <span id="avrStack", style="font-size: 17px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 17px; font-weight: bold;">PLAYERS:</span></p>
+                    <span id="currentPlayers", style="font-size: 17px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 24px; font-weight: bold;">0</span><br>
+                    <p><span style="font-size: 17px; font-weight: bold;">NEXT BREAK:</span></p>
+                    <span id="nextBreak", style="font-size: 17px; font-weight: bold;">00:00</span>
                 </div>
             </div>
             <div class="column">
