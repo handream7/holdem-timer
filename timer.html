@@ -65,6 +65,7 @@
     width: 50%; 
     height: 30px;
     background-color: #555;
+    border: 2px solid white; /* 흰색 실선 테두리 */
     cursor: pointer;
     position: relative;
     margin: 20px 0; /* 재생바와 버튼 간의 간격 */
@@ -162,16 +163,17 @@
             margin-top: 20px;
         }
         #headsUpButton {
-            width: 100px;
-            height: 40px;
-            background-color: black;
-            border: 2px solid white;
-            color: white;
-            font-size: 14px;
-            cursor: pointer;
-            margin: 20px 0; /* 위아래 간격 */
-            border-radius: 5px;
-        }
+    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
+    height: 30px; /* 높이는 고정 */
+    background-color: black; /* 배경색 검정 */
+    border: 2px solid white; /* 흰색 선 */
+    color: white;
+    font-size: 10px; /* 글자 크기 */
+    cursor: pointer;
+    margin: 0 10px; /* 버튼 간격 */
+    border-radius: 5px; /* 모서리 둥글게 */
+    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
+}
 #pausedIndicator {
     font-size: 120px; /* 글씨 크기 증가 */
     color: red; /* 글씨 색상 */
