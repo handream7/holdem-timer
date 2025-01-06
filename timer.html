@@ -54,6 +54,13 @@
             justify-content: center; /* 중앙 정렬 */
             align-items: center; /* 수직 중앙 정렬 */
         }
+        #controls2 {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: row; /* 가로로 배치 */
+            justify-content: center; /* 중앙 정렬 */
+            align-items: center; /* 수직 중앙 정렬 */
+        }
 #progressBar {
     width: 50%; 
     height: 30px;
@@ -108,28 +115,30 @@
 }
         /* 버튼 스타일 */
         .button {
-            width: 30px;
-            height: 30px;
-            background-color: black; /* 배경색 검정 */
-            border: 2px solid white; /* 흰색 선 */
-            cursor: pointer;
-            color: white;
-            font-size: 10px;
-            margin: 0 10px; /* 버튼 간격 */
-            border-radius: 5px; /* 모서리 둥글게 */
-        }
+    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
+    height: 30px; /* 높이는 고정 */
+    background-color: black; /* 배경색 검정 */
+    border: 2px solid white; /* 흰색 선 */
+    color: white;
+    font-size: 10px; /* 글자 크기 */
+    cursor: pointer;
+    margin: 0 10px; /* 버튼 간격 */
+    border-radius: 5px; /* 모서리 둥글게 */
+    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
+}
         /* 화살표 버튼 스타일 */
         .arrow-button {
-            width: 30px;
-            height: 30px;
-            background-color: black; /* 배경색 검정 */
-            border: 2px solid white; /* 흰색 선 */
-            color: white;
-            font-size: 10px;
-            cursor: pointer;
-            margin: 0 10px; /* 버튼 간격 */
-            border-radius: 5px; /* 모서리 둥글게 */
-        }
+    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
+    height: 30px;
+    background-color: black; /* 배경색 검정 */
+    border: 2px solid white; /* 흰색 선 */
+    color: white;
+    font-size: 10px;
+    cursor: pointer;
+    margin: 0 10px; /* 버튼 간격 */
+    border-radius: 5px; /* 모서리 둥글게 */
+    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
+}
 /* 마우스 오버 시 배경색 변경 */
 .button:hover, .arrow-button:hover {
     background-color: gray; /* 마우스 오버 시 회색 배경 */
@@ -207,6 +216,10 @@
                     <button class="arrow-button" id="prevLevelButton"><<</button> <!-- 이전 레벨 버튼 -->
                     <button id="pauseButton" class="button">▶</button> <!-- 일시정지 버튼 아이콘 -->
                     <button class="arrow-button" id="nextLevelButton">>></button> <!-- 다음 레벨 버튼 -->
+                </div>
+                <div id="controls2">
+                    <button class="arrow-button" id="rewindButton"><(10s)</button> <!-- 10초 이전으로 이동하는 버튼 -->
+                    <button class="arrow-button" id="forwardButton">(10s)></button> <!-- 10초 이후로 이동하는 버튼 -->
                 </div>
                 <div id="progressBar" onclick="setTimer(event)">
                     <div id="progress"></div>
@@ -450,6 +463,24 @@ document.getElementById('pauseButton').addEventListener('click', () => {
         timerInterval = null; // 인터벌 초기화
     }
 });
+
+// 10초 이전으로 이동하는 버튼 이벤트
+document.getElementById('rewindButton').addEventListener('click', () => {
+    timeLeft = Math.max(0, timeLeft + 10); // 남은 시간이 10초 이상일 경우만 이동
+    nextBreakTime = Math.max(0, nextBreakTime + 10); // nextBreakTime도 10초 증가
+    updateTimer(); // 타이머 업데이트
+});
+
+// 10초 이후로 이동하는 버튼 이벤트
+document.getElementById('forwardButton').addEventListener('click', () => {
+    if (timeLeft > 10) { // 잔여 시간이 10초 초과일 경우에만 작동
+        timeLeft = Math.min(blinds[currentLevel].duration * 60, timeLeft - 10); // 최대 시간을 넘지 않도록 조정
+        nextBreakTime = Math.max(0, nextBreakTime - 10); // nextBreakTime을 10초 감소
+    }
+    // timeLeft가 10초 이하일 경우 아무것도 하지 않음
+    updateTimer(); // 타이머 업데이트
+});
+
 
         // 드롭다운 메뉴 초기값 설정
         const chipDropdown = document.getElementById('chipDropdown');
