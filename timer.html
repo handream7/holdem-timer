@@ -262,6 +262,10 @@
         const currentPlayersElement = document.getElementById('currentPlayers');
         const totalPlayersElement = document.getElementById('totalPlayers');
 
+        // 알림 소리 URL
+        const alertSound = new Audio('https://github.com/handream7/holdem-timer/raw/c75699f773d6447a5b8312e782a75e80fb234930/alarm.mp3');
+
+
         let currentLevel = 0;
         let timeLeft = 0;
         let timerInterval;
@@ -371,10 +375,12 @@ function updateTimer() {
                 // 레벨이 끝날 때
                 if (currentLevel === 4 || currentLevel === 9 || currentLevel === 14 || currentLevel === 19) {
                     isInBreak = true; // 브레이크 상태로 변경
+                    alertSound.play(); // 브레이크 시작 시 알림 소리 재생
                     breakCountdown = breakTime; // 브레이크 카운트다운 초기화
                     nextBreakElement.innerText = '00:00:00'; // 브레이크 시 다음 브레이크 타이머를 0으로 설정
                 } else {
                     currentLevel++;
+                    alertSound.play(); // 알림 소리 재생
                     timeLeft = displayBlindInfo();
                     calculateNextBreakTime(); // 다음 브레이크 시간 재계산
                 }
@@ -419,6 +425,7 @@ function formatTime(seconds) {
                 // 브레이크 상태에서 이전 레벨로 넘어가기
                 isInBreak = false; // 브레이크 상태 변경
                 breakIndicator.style.display = "none"; // 브레이크 표시 숨김
+                alertSound.play(); // 브레이크 종료 시 알림 소리 재생
                 if (currentLevel > 0) {
                     currentLevel--;
                     timeLeft = displayBlindInfo(); // 이전 레벨의 시간 설정
