@@ -197,8 +197,10 @@
                     <span id="totalTime", style="font-size: 15px; font-weight: bold;">00:00</span><br>
                     <p><span style="font-size: 15px; font-weight: bold;">TOTAL CHIPS:</span></p>
                     <span id="totalChips", style="font-size: 15px; font-weight: bold;">0</span><br>
+                    <span id="totalChipsBB" style="font-size: 15px; font-weight: bold;">(0BB)</span><br>
                     <p><span style="font-size: 15px; font-weight: bold;">AVR STACK:</span></p>
                     <span id="avrStack", style="font-size: 15px; font-weight: bold;">0</span><br>
+                    <span id="avrStackBB" style="font-size: 15px; font-weight: bold;">(0BB)</span><br>
                     <p><span style="font-size: 15px; font-weight: bold;">PLAYERS:</span></p>
                     <span id="currentPlayers", style="font-size: 15px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 15px; font-weight: bold;">0</span><br>
                     <p><span style="font-size: 15px; font-weight: bold;">NEXT BREAK:</span></p>
@@ -299,6 +301,23 @@ function displayBlindInfo() {
             nextLevelBlinds.innerText = `${formatNumber(Number(nextBlind.small))} / ${formatNumber(Number(nextBlind.big))}`; // 다음 블라인드
             nextLevelAnte.innerText = formatNumber(Number(nextBlind.ante)); // 다음 앤티
         }
+
+        // TOTAL CHIPS (XX BB) 계산
+        const currentBigBlind = Number(blind.big);
+        let chipsBB = currentBigBlind > 0 ? (totalChips / currentBigBlind) : 0; // BB로 나눈 값 계산
+        
+        // 소수점 이하가 0일 경우 정수로 표시하고, 그렇지 않으면 소수점 첫째 자리까지 표시
+        if (Number.isInteger(chipsBB)) {
+            chipsBB = chipsBB.toFixed(0); // 정수로 표시
+        } else {
+            chipsBB = chipsBB.toFixed(1); // 소수점 첫째 자리까지 표시
+        }
+        
+        document.getElementById('totalChipsBB').innerText = `(${chipsBB} BB)`; // "(XX BB)" 형식으로 업데이트
+
+        // AVR STACK (YY BB) 업데이트
+        updateAvrStack(); // 레벨 변경 시 AVR STACK BB 업데이트
+
         return blind.duration * 60; // 분을 초로 변환
     } else {
         blindInfo.innerText = "모든 레벨이 종료되었습니다.";
@@ -516,7 +535,20 @@ document.getElementById('forwardButton').addEventListener('click', () => {
 
             // 평균 스택 업데이트
             updateAvrStack();
-        });
+
+    // BB 값 업데이트
+    const currentBigBlind = Number(blinds[currentLevel].big);
+    let chipsBB = currentBigBlind > 0 ? (totalChips / currentBigBlind) : 0; // BB로 나눈 값 계산
+    
+    // 소수점 이하가 0일 경우 정수로 표시하고, 그렇지 않으면 소수점 첫째 자리까지 표시
+    if (Number.isInteger(chipsBB)) {
+        chipsBB = chipsBB.toFixed(0); // 정수로 표시
+    } else {
+        chipsBB = chipsBB.toFixed(1); // 소수점 첫째 자리까지 표시
+    }
+    
+    document.getElementById('totalChipsBB').innerText = `(${chipsBB} BB)`; // "(XX BB)" 형식으로 업데이트
+});
 
         // 플레이어 제거 버튼 이벤트
         document.getElementById('removePlayerButton').addEventListener('click', () => {
@@ -534,10 +566,21 @@ document.getElementById('forwardButton').addEventListener('click', () => {
             if (playerCount > 0) {
                 const avrStack = Math.ceil(totalChips / playerCount);
                 avrStackElement.innerText = formatNumber(avrStack);
-            } else {
-                avrStackElement.innerText = '0'; // 플레이어가 없을 경우 0으로 표시
-            }
-        }
+
+        // TOTAL CHIPS의 BB 값을 A로 나누기
+        const currentBigBlind = Number(blinds[currentLevel].big);
+        const chipsBB = currentBigBlind > 0 ? (totalChips / currentBigBlind).toFixed(1) : 0; // TOTAL CHIPS의 BB 계산
+
+        // YY BB 계산: TOTAL CHIPS의 BB를 플레이어 수 A로 나눈 값
+        const yyValue = chipsBB / playerCount; // 플레이어 수로 나누기
+        
+        // 소수점 이하가 0일 경우 정수로 표시하고, 그렇지 않으면 소수점 첫째 자리까지 표시
+        document.getElementById('avrStackBB').innerText = `(${Number.isInteger(yyValue) ? yyValue.toFixed(0) : yyValue.toFixed(1)} BB)`; // "(YY BB)" 형식으로 업데이트
+    } else {
+        avrStackElement.innerText = '0'; // 플레이어가 없을 경우 0으로 표시
+        document.getElementById('avrStackBB').innerText = '(0 BB)'; // 기본값으로 설정
+    }
+}
 // Heads-up 버튼 이벤트
 document.getElementById('headsUpButton').addEventListener('click', () => {
     const confirmation = confirm("진행하겠습니까?");
