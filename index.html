@@ -43,7 +43,21 @@
 </head>
 <body>
     <h1>홀덤 블라인드 설정</h1>
-    <button type="button" onclick="startTimer()">플레이</button> <!-- 버튼 위치 상단으로 이동 -->
+    <button type="button" onclick="startTimer()">플레이</button>
+    
+    <div>
+        <label for="durationUniform">Duration 한방에 변경:</label>
+        <select id="durationUniform">
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="10">10</option>
+            <option value="12">12</option>
+            <option value="15">15</option>
+        </select>
+        <button type="button" onclick="uniformDuration()">확인</button>
+    </div>
+
     <table>
         <thead>
             <tr>
@@ -63,7 +77,6 @@
     <script>
         const blindTableBody = document.getElementById('blindTableBody');
 
-        // 기본값 설정
         const defaultBlinds = [
             [100, 200, 200, 15, 0],
             [200, 300, 300, 15, 0],
@@ -93,7 +106,6 @@
             [30000, 60000, 60000, 6, 0],
         ];
 
-        // 레벨 1부터 26까지 생성
         for (let i = 1; i <= 26; i++) {
             const values = defaultBlinds[i - 1];
             blindTableBody.innerHTML += `
@@ -102,14 +114,16 @@
                     <td><input type="text" id="small${i}" value="${formatNumberWithCommas(values[0])}" required oninput="formatInput(this)"></td>
                     <td><input type="text" id="big${i}" value="${formatNumberWithCommas(values[1])}" required oninput="formatInput(this)"></td>
                     <td><input type="text" id="ante${i}" value="${formatNumberWithCommas(values[2])}" required oninput="formatInput(this)"></td>
-                    <td><input type="number" id="dur${i}" value="${values[3]}" required></td>
+                    <td>
+                        <input type="number" id="dur${i}" value="${values[3]}" required>
+                        <button type="button" onclick="setDuration(${i})">이하통일</button> <!-- 각 셀에 이하통일 버튼 추가 -->
+                    </td>
                     <td><input type="number" id="brk${i}" value="${values[4]}" required></td>
                 </tr>
             `;
         }
 
         function formatInput(input) {
-            // 입력값에서 숫자만 남기고 쉼표 추가
             const value = input.value.replace(/[^0-9]/g, '');
             input.value = formatNumberWithCommas(value);
         }
@@ -118,10 +132,26 @@
             return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
         }
 
+        function uniformDuration() {
+            const selectedDuration = document.getElementById('durationUniform').value;
+            for (let i = 1; i <= 26; i++) {
+                const durInput = document.getElementById(`dur${i}`);
+                durInput.value = selectedDuration;
+            }
+        }
+
+        function setDuration(level) {
+            const selectedDur = document.getElementById(`dur${level}`).value;
+            for (let i = 1; i <= 26; i++) {
+                const durInput = document.getElementById(`dur${i}`);
+                durInput.value = selectedDur;
+            }
+        }
+
         function startTimer() {
             const blinds = [];
             for (let i = 1; i <= 26; i++) {
-                const small = document.getElementById(`small${i}`).value.replace(/,/g, ''); // 쉼표 제거
+                const small = document.getElementById(`small${i}`).value.replace(/,/g, '');
                 const big = document.getElementById(`big${i}`).value.replace(/,/g, '');
                 const ante = document.getElementById(`ante${i}`).value.replace(/,/g, '');
                 const dur = document.getElementById(`dur${i}`).value;
@@ -130,7 +160,7 @@
                 if (small && big && dur) {
                     blinds.push({
                         level: i,
-                        small: small, // 쉼표 제거된 값
+                        small: small,
                         big: big,
                         ante: ante,
                         duration: dur,
