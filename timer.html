@@ -3,564 +3,513 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>홀덤 블라인드 타이머</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
-            background-color: black; /* 배경색 검정 */
-            color: white; /* 글씨색 하얀색 */
-        }
-.container {
-    width: 100%; /
-    max-width: 600px; /* 최대 너비 설정 (필요에 따라 조정 가능) */
-    margin: 0 auto; /* 중앙 정렬 */
-    padding: 10px; /* 패딩 줄임 */
-}
-.row {
-    flex: 1;
-    display: flex;
-    margin: 3px 0; /* 열 간의 간격 줄임 */
-}
-.column {
-    flex: 1;
-    padding: 5px;
-    margin: 0; /* 각 열 간의 간격을 없앰 */
-    display: flex; /* 플렉스 박스 사용 */
-    flex-direction: column; /* 세로 방향으로 정렬 */
-    align-items: center; /* 중앙 정렬 */
-}
-        .column:nth-child(2) {
-            flex: 3; /* 두 번째 열을 3배 크기로 설정 */
-        }
-        #level {
-            font-size: 30px; /* 레벨 글씨 크기 */
-            margin-top: 10px;
-        }
-        #timer {
-            font-size: 170px; /* 타이머 숫자 크게 설정 */
-            margin: 10px 0;
-        }
-        #breakIndicator {
-            font-size: 40px;
-            color: red; /* 브레이크 표시 색상 */
-            display: none; /* 초기에는 숨김 */
-        }
-        #controls {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: row; /* 가로로 배치 */
-            justify-content: center; /* 중앙 정렬 */
-            align-items: center; /* 수직 중앙 정렬 */
-        }
-        #controls2 {
-            margin-top: 10px;
-            display: flex;
-            flex-direction: row; /* 가로로 배치 */
-            justify-content: center; /* 중앙 정렬 */
-            align-items: center; /* 수직 중앙 정렬 */
-        }
-#progressBar {
-    width: 50%; 
-    height: 30px;
-    background-color: #555;
-    border: 2px solid white; /* 흰색 실선 테두리 */
-    cursor: pointer;
-    position: relative;
-    margin: 20px 0; /* 재생바와 버튼 간의 간격 */
-}
-        #progress {
-            height: 100%;
-            background-color: rgba(200, 200, 200, 0.5);
-            width: 0;
-        }
-        #marker {
-            width: 10px;
-            height: 35px;
-            background-color: white; /* 마커 색상 흰색 */
-            position: absolute;
-            top: 0;
-            left: 0;
-        }
-        .hidden {
-            display: none;
-        }
-        #nextLevelInfo {
-            font-size: 15px; /* NEXT LEVEL 정보 글씨 크기 */
-            margin-top: 10px;
-        }
-        #blindsInfo, #anteInfo {
-            font-size: 25px; /* 블라인드 및 앤티 정보 글씨 크기 */
-        }
-
-        #blindsLabel, #anteLabel {
-            font-size: 25px; /* 블라인드 및 앤티 레이블 글씨 크기 증가 */
-        }
-        #elapsed {
-            height: 100%;
-            background-color: olive; /* 색상을 올리브 그린으로 변경 */
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 0;
-        }
-#info p {
-    margin: 10px 0; /* 각 p 요소의 상하 간격을 줄임 */
-}
-
-#info span {
-    margin: 0; /* span 요소의 간격을 없앰 */
-    display: inline-block; /* span을 인라인 블록 요소로 설정 */
-    line-height: 1; /* 줄 높이를 1로 설정하여 간격 감소 */
-}
-        /* 버튼 스타일 */
-        .button {
-    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
-    height: 30px; /* 높이는 고정 */
-    background-color: black; /* 배경색 검정 */
-    border: 2px solid white; /* 흰색 선 */
-    color: white;
-    font-size: 10px; /* 글자 크기 */
-    cursor: pointer;
-    margin: 0 10px; /* 버튼 간격 */
-    border-radius: 5px; /* 모서리 둥글게 */
-    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
-}
-        /* 화살표 버튼 스타일 */
-        .arrow-button {
-    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
-    height: 30px;
-    background-color: black; /* 배경색 검정 */
-    border: 2px solid white; /* 흰색 선 */
-    color: white;
-    font-size: 10px;
-    cursor: pointer;
-    margin: 0 10px; /* 버튼 간격 */
-    border-radius: 5px; /* 모서리 둥글게 */
-    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
-}
-/* 마우스 오버 시 배경색 변경 */
-.button:hover, .arrow-button:hover {
-    background-color: gray; /* 마우스 오버 시 회색 배경 */
-}
-        /* 드롭다운 메뉴 스타일 */
-        #chipDropdown {
-            margin: 20px 0; /* 드롭다운과 재생바 간격 */
             background-color: black;
             color: white;
-            border: 2px solid white;
-            border-radius: 5px;
-            padding: 5px;
-            font-size: 16px;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           justify-content: center;
+           height: 100vh; /* 화면 높이에 맞춰 조정 */
         }
-        /* 플레이어 조절 버튼 스타일 */
-        #playerControls {
-            margin: 15px 0; /* 플레이어 조절 버튼 간격 */
-        }
-        /* 정보 스타일 */
-        #info {
-            margin-top: 20px;
-        }
-        #headsUpButton {
-    padding: 5px 15px; /* 위아래 5px, 좌우 15px의 패딩 설정 */
-    height: 30px; /* 높이는 고정 */
-    background-color: black; /* 배경색 검정 */
-    border: 2px solid white; /* 흰색 선 */
-    color: white;
-    font-size: 10px; /* 글자 크기 */
-    cursor: pointer;
-    margin: 0 10px; /* 버튼 간격 */
-    border-radius: 5px; /* 모서리 둥글게 */
-    white-space: nowrap; /* 텍스트가 래핑되지 않도록 설정 */
+
+#timerDisplay {
+    font-size: 2em; /* 텍스트 크기 조정 */
+    margin: 20px;
 }
-#pausedIndicator {
-    font-size: 120px; /* 글씨 크기 증가 */
-    color: red; /* 글씨 색상 */
-    border: 15px solid red; /* 빨간 선 */
-    display: none; /* 초기에는 숨김 */
-    padding: 20px; /* 패딩 추가 */
-    position: absolute; /* 절대 위치 지정 */
-    top: 50%; /* 화면 중앙에 위치 */
-    left: 50%; /* 화면 중앙에 위치 */
-    transform: translate(-50%, -50%); /* 중앙 정렬 */
-    z-index: 10; /* 다른 요소 위에 표시되도록 */
+        .container {
+            display: flex;
+            justify-content: space-between;
+        }
+        .column {
+            width: 30%;
+            padding: 20px;
+        }
+.column:first-child div {
+    line-height: 0; /* 원하는 줄 간격으로 조정하세요 */
 }
+.column:nth-child(2) {
+    text-align: center; /* 가운데 정렬 */
+    width: 40%;
+}
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            background-color: #555;
+            font-size: 1.5em;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #777;
+        }
+        #blindTimer {
+            font-weight: 300;
+            margin: 10px 0;
+        }
+        input[type="number"] {
+            width: 60px;
+            color: black;
+        }
+        .progress-container {
+            width: 100%;
+            height: 30px;
+            background-color: #444;
+            position: relative;
+            margin: 10px 0;
+        }
+        .progress {
+            height: 100%;
+            background-color: #28a745;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .marker {
+            width: 10px;
+            height: 30px;
+            background-color: #fff;
+            position: absolute;
+            top: 0;
+            cursor: pointer;
+        }
+.next-level {
+    font-size: 20px; /* 원하는 크기로 조정하세요 */
+}
+.next-level-title {
+    font-size: 20px; /* 글자 크기를 20px로 설정 */
+}
+button {
+    margin: 16px 7px; /* 위쪽 마진을 늘려서 간격을 조정하세요 */
+}
+#pauseOverlay {
+    position: absolute;
+    top: 150px; /* 블라인드 타이머의 위치에 맞게 조정하세요 */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 0, 0, 0.5); /* 반투명 빨간색 */
+    padding: 20px;
+    border-radius: 10px;
+    z-index: 10; /* 다른 요소 위에 표시되도록 설정 */
+}
+
+/* 스마트폰 가로 모드에서 스타일 조정 */
+@media (max-width: 768px) {
+    body {
+        flex-direction: row; /* 가로 방향으로 배치 */
+        justify-content: space-around; /* 요소 간격 조정 */
+    }
+
+    #timerDisplay {
+        font-size: 1.5em; /* 텍스트 크기 조정 */
+    }
+
+    button {
+        padding: 10px 15px; /* 버튼 크기 조정 */
+        font-size: 1.2em; /* 버튼 텍스트 크기 조정 */
+    }
+}
+
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="row">
-            <div class="column">
-                <div id="info">
-                    <p><span style="font-size: 15px; font-weight: bold;">TOTAL TIME:</span></p>
-                    <span id="totalTime", style="font-size: 15px; font-weight: bold;">00:00</span><br>
-                    <p><span style="font-size: 15px; font-weight: bold;">TOTAL CHIPS:</span></p>
-                    <span id="totalChips", style="font-size: 15px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 15px; font-weight: bold;">AVR STACK:</span></p>
-                    <span id="avrStack", style="font-size: 15px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 15px; font-weight: bold;">PLAYERS:</span></p>
-                    <span id="currentPlayers", style="font-size: 15px; font-weight: bold;">0</span> / <span id="totalPlayers", style="font-size: 15px; font-weight: bold;">0</span><br>
-                    <p><span style="font-size: 15px; font-weight: bold;">NEXT BREAK:</span></p>
-                    <span id="nextBreak", style="font-size: 15px; font-weight: bold;">00:00:00</span>
-                </div>
+        <div class="column">
+            <h2>TOTAL TIME:</h2>
+            <div id="totalTime" style="font-size: 20px;">00:00:00</div>
+            <h2>TOTAL CHIPS:</h2>
+            <div id="totalChips" style="margin-bottom: 15px;">0</div>
+            <div id="totalChipsBB" style="font-size: 15px;">(0 BB)</div>
+            <h2>AVR STACK:</h2>
+            <div id="avrStack" style="margin-bottom: 15px;">0</div>
+            <div id="avrStackBB" style="font-size: 15px;">(0 BB)</div>
+            <h2>PLAYERS:</h2>
+            <div id="players">0 / 0</div>
+            <h2>NEXT BREAK:</h2>
+            <div id="nextBreak" style="font-size: 20px;">00:00:00</div>
+        </div>
+
+<div id="pauseOverlay" style="display: none;">
+    <div style="color: red; font-size: 50px; font-weight: bold;">PAUSE</div>
+</div>
+
+        <div class="column">
+            <h2 id="currentLevel">Level 1</h2>
+            <h2 id="blindTimer" style="font-size: 150px;">00:00</h2>
+            <h2>BLINDS <span id="currentBlinds">0 / 0 / 0</span></h2>
+            <h2 class="next-level-title">NEXT LV <span id="nextBlinds" class="next-level">0 / 0 / 0</span></h2>
+            <div class="progress-container" id="progress">
+                <div class="progress" id="progressBar"></div>
+                <div class="marker" id="marker"></div>
             </div>
-            <div class="column">
-                <div id="level">Level<span id="levelNumber">1</span></div>
-                <div id="timer">00:00</div>
-                <div id="pausedIndicator" class="hidden">PAUSED</div>
-                <div id="breakIndicator">BREAK</div> <!-- 브레이크 표시 -->
-                <div><span id="blindsLabel">BLINDS:  <span id="blindsInfo"></span></span>  <span style="font-size: 25px;"> /</span> <span id="anteLabel"><span id="anteInfo"></span></span></div>
-                <div id="nextLevelInfo">NEXT LEVEL: LV<span id="nextLevelNumber"></span> <span id="nextLevelBlinds"></span> / <span id="nextLevelAnte"></span></div>
-            </div>
-            <div class="column">
-                <div id="controls">
-                    <button class="arrow-button" id="prevLevelButton"><<</button> <!-- 이전 레벨 버튼 -->
-                    <button id="pauseButton" class="button">▶</button> <!-- 일시정지 버튼 아이콘 -->
-                    <button class="arrow-button" id="nextLevelButton">>></button> <!-- 다음 레벨 버튼 -->
-                </div>
-                <div id="controls2">
-                    <button class="arrow-button" id="rewindButton"><(10s)</button> <!-- 10초 이전으로 이동하는 버튼 -->
-                    <button class="arrow-button" id="forwardButton">(10s)></button> <!-- 10초 이후로 이동하는 버튼 -->
-                </div>
-                <div id="progressBar" onclick="setTimer(event)">
-                    <div id="progress"></div>
-                    <div id="elapsed"></div> <!-- 경과한 시간 표시 -->
-                    <div id="marker"></div> <!-- 마커 추가 -->
-                </div>
-                <select id="chipDropdown">
-                    <option value="40000">40,000</option>
-                    <option value="45000">45,000</option>
-                    <option value="48000">48,000</option>
-                    <option value="50000">50,000</option>
-                </select>
-                <div id="playerControls">
-                    <button id="addPlayerButton" class="button">+</button> <!-- 플레이어 추가 버튼 -->
-                    <button id="removePlayerButton" class="button">-</button> <!-- 플레이어 제거 버튼 -->
-                </div>
-                <button id="headsUpButton">HEADS-UP</button>
-            </div>
+        </div>
+
+        <div class="column">
+            <button onclick="previousLevel()"><<</button>
+            <button id="playPauseBtn" onclick="toggleTimer()">▶ / I I</button>
+            <button onclick="nextLevel()">>></button>
+            <br>
+            <button onclick="increaseTimer(10)"><(10초)</button>
+            <button onclick="decreaseTimer(10)">(10초)></button>
+            <br>
+<div>
+    <label class="chip-option">
+        <input type="radio" name="chipAmount" value="40000" checked> 40,000 chips
+    </label>
+    <br>
+    <label class="chip-option">
+        <input type="radio" name="chipAmount" value="45000"> 45,000 chips
+    </label>
+    <br>
+    <label class="chip-option">
+        <input type="radio" name="chipAmount" value="48000"> 48,000 chips
+    </label>
+    <br>
+    <label class="chip-option">
+        <input type="radio" name="chipAmount" value="50000"> 50,000 chips
+    </label>
+</div>
+            <br>
+<button onclick="increaseChipAmount()">+</button>
+<button onclick="decreaseChipAmount()">-</button>
+            <br>
+            <button onclick="confirmHeadsUp()">Heads-up</button>
         </div>
     </div>
 
+    <div id="confirmationModal" style="display:none; position:fixed; left:50%; top:50%; transform:translate(-50%, -50%); background-color: rgba(0, 0, 0, 0.8); padding: 20px; z-index: 1000;">
+        <p>실행하시겠습니까?</p>
+        <button onclick="startHeadsUp()">확인</button>
+        <button onclick="cancelHeadsUp()">취소</button>
+    </div>
+
     <script>
-        const blinds = JSON.parse(localStorage.getItem('blinds')) || [];
-        const blindInfo = document.getElementById('blindsInfo');
-        const anteInfo = document.getElementById('anteInfo');
-        const levelNumber = document.getElementById('levelNumber');
-        const timerElement = document.getElementById('timer');
-        const totalTimeElement = document.getElementById('totalTime');
-        const nextBreakElement = document.getElementById('nextBreak');
-        const breakIndicator = document.getElementById('breakIndicator');
-        const nextLevelNumber = document.getElementById('nextLevelNumber');
-        const nextLevelBlinds = document.getElementById('nextLevelBlinds');
-        const nextLevelAnte = document.getElementById('nextLevelAnte');
-        const marker = document.getElementById('marker');
-        const elapsed = document.getElementById('elapsed');
-        const totalChipsElement = document.getElementById('totalChips');
-        const avrStackElement = document.getElementById('avrStack');
-        const currentPlayersElement = document.getElementById('currentPlayers');
-        const totalPlayersElement = document.getElementById('totalPlayers');
+    const levelChangeSound = new Audio('https://github.com/handream7/holdem-timer/raw/9ca20fd264c1a0af29b620d2c9e254beeb7c3d05/alarm.mp3');
+    const breakSound = new Audio('https://github.com/handream7/holdem-timer/raw/9ca20fd264c1a0af29b620d2c9e254beeb7c3d05/alarm.mp3');
 
-        // 알림 소리 URL
-        const alertSound = new Audio('https://github.com/handream7/holdem-timer/raw/c75699f773d6447a5b8312e782a75e80fb234930/alarm.mp3');
-
-
+        let blinds = JSON.parse(localStorage.getItem('blinds'));
         let currentLevel = 0;
-        let timeLeft = 0;
         let timerInterval;
-        let totalTime = -1; // 전체 시간
-        let isPaused = true;
-        let totalChips = 0; // 총 칩수
-        let playerCount = 0; // 현재 플레이어 수
-        let selectedChipValue = 40000; // 드롭다운에서 선택한 칩 값
+        let totalTime = 0;
+        let blindTime = 0; // 블라인드 타이머
+        let totalTimeElapsed = 0; // 총 경과 시간
+        let headsUpMode = false;
 
-// 페이지 로드 시 타이머 설정
-window.onload = function() {
-    timeLeft = displayBlindInfo(); // 초기 블라인드 정보 표시
-    updateProgressBar(); // 진행 바 업데이트
-    calculateNextBreakTime(); // 초기 브레이크 시간 계산
-};
-        // 브레이크 타임 설정
-        const breakTime = 7 * 60; // 7분을 초로 변환
-        let nextBreakTime = 0; // 다음 브레이크까지 남은 시간
-        let breakCountdown = 0; // 브레이크 카운트다운 타이머
-        let isInBreak = false; // 브레이크 상태 확인
-
-function displayBlindInfo() {
-    if (currentLevel < blinds.length) {
-        const blind = blinds[currentLevel];
-        blindInfo.innerText = `${formatNumber(Number(blind.small))} / ${formatNumber(Number(blind.big))}`;
-        anteInfo.innerText = formatNumber(Number(blind.ante));
-        levelNumber.innerText = currentLevel + 1; // 레벨 표시
-        if (currentLevel + 1 < blinds.length) {
-            const nextBlind = blinds[currentLevel + 1];
-            nextLevelNumber.innerText = currentLevel + 2; // 다음 레벨
-            nextLevelBlinds.innerText = `${formatNumber(Number(nextBlind.small))} / ${formatNumber(Number(nextBlind.big))}`; // 다음 블라인드
-            nextLevelAnte.innerText = formatNumber(Number(nextBlind.ante)); // 다음 앤티
+        // 칩 선택 함수
+        function setChipAmount() {
+            const selectedChip = document.querySelector('input[name="chipAmount"]:checked');
+            if (selectedChip) {
+                const chipAmount = selectedChip.value;
+                // 여기에서 chipAmount를 사용하여 필요한 작업을 수행하세요
+                alert(`선택한 칩: ${chipAmount}`);
+            }
         }
-        return blind.duration * 60; // 분을 초로 변환
+
+function updateBlinds() {
+    const current = blinds[currentLevel];
+    
+    // 블라인드 정보 업데이트
+    document.getElementById('currentBlinds').innerText = 
+        `${current.small.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} / ${current.big.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} / ${current.ante.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+    
+    if (currentLevel < blinds.length - 1) {
+        const next = blinds[currentLevel + 1];
+        document.getElementById('nextBlinds').innerText = 
+            `${next.small.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} / ${next.big.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')} / ${next.ante.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+        document.getElementById('nextBlinds').insertAdjacentHTML('afterbegin', `${currentLevel + 2} `);
     } else {
-        blindInfo.innerText = "모든 레벨이 종료되었습니다.";
-        return 0;
-    }
-}
-
-function calculateNextBreakTime() {
-    let totalLevelTime = 0;
-    let levelTimeRemaining = timeLeft; // 현재 레벨의 남은 시간
-
-    // 현재 레벨을 포함하여 다음 브레이크까지의 모든 레벨의 시간 계산
-    for (let i = currentLevel; i < blinds.length; i++) {
-        if (i === currentLevel) {
-            // 현재 레벨의 남은 시간에 1초 추가
-            totalLevelTime += levelTimeRemaining + 1; // 1초 추가
-        } else {
-            totalLevelTime += blinds[i].duration * 60; // 각 레벨의 전체 시간을 초로 변환하여 합산
-        }
-
-        if (i === 4 || i === 9 || i === 14 || i === 19) { // 5, 10, 15, 20 레벨에서 추가 브레이크
-            break; // 브레이크가 시작되면 루프 종료
-        }
+        document.getElementById('nextBlinds').innerText = 'N/A';
     }
 
-    nextBreakTime = totalLevelTime; // 총 남은 시간 계산
-    nextBreakElement.innerText = formatTime(nextBreakTime); // 초기값으로 설정
+    document.getElementById('currentLevel').innerText = `LEVEL ${currentLevel + 1}`;
+    blindTime = current.duration * 60; // 블라인드 타이머 초기화
+    totalTime = 0; // 총 시간 초기화
+
+    // TOTAL CHIPS를 현재 레벨의 빅 블라인드로 나누어 XX BB 계산
+    const bigBlindValue = current.big; // 현재 레벨의 빅 블라인드
+    const bbAmount = bigBlindValue > 0 ? Math.round((totalChips / bigBlindValue) * 10) / 10 : 0; // 소수점 둘째 자리에서 반올림
+    document.getElementById('totalChipsBB').innerText = `(${bbAmount}BB)`; // BB 값 업데이트
+
+    // AVR STACK BB 계산 (totalChipsBB 값 업데이트 후)
+    const avrStackBB = playersX > 0 ? Math.round(bbAmount / playersX * 10) / 10 : 0; // AVR STACK BB 계산
+    document.getElementById('avrStackBB').innerText = `(${avrStackBB}BB)`; // AVR STACK BB 값 업데이트
+
+    updateTimers(); // 타이머 업데이트
 }
 
+        function updateNextBreakTimer() {
+            let totalNextBreakTime = 0;
 
+            const current = blinds[currentLevel];
 
-function updateTimer() {
-    if (!isPaused) {
-        if (isInBreak) {
-            if (breakCountdown > 0) {
-                const minutes = Math.floor(breakCountdown / 60);
-                const seconds = breakCountdown % 60;
-                timerElement.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                breakCountdown--;
+            // 레벨 5, 10, 15, 20의 경우 해당 Level의 Duration 잔여 시간만 보여줌
+            if ((currentLevel + 1) % 5 === 0) {
+                totalNextBreakTime += blindTime; // 현재 레벨의 잔여 시간만 추가
+            } else if (current.break > 0 && blindTime > 0) {
+                // 현재 블라인드가 브레이크 타이머인 경우
+                totalNextBreakTime += blindTime; // 현재 브레이크 잔여 시간 추가
 
-                // 브레이크 중에도 total time 증가
-                totalTime++;
-                totalTimeElement.innerText = formatTime(totalTime); // total time을 시:분:초 형식으로 표시
-                breakIndicator.style.display = "block"; // 브레이크 표시
-                return; // 브레이크 동안에는 다음 레벨로 넘어가지 않음
+                // 다음 브레이크까지의 레벨들의 Duration 합산
+                for (let i = currentLevel + 1; i < blinds.length; i++) {
+                    const nextLevel = blinds[i];
+                    totalNextBreakTime += nextLevel.duration * 60; // 초로 변환
+                    if (nextLevel.break > 0) {
+                        break; // 다음 브레이크가 있는 레벨에서 종료
+                    }
+                }
             } else {
-                // 브레이크가 끝났을 때
-                isInBreak = false;
-                breakIndicator.style.display = "none"; // 브레이크 표시 숨김
-                currentLevel++;
-                timeLeft = displayBlindInfo(); // 다음 레벨의 시간 설정
-                calculateNextBreakTime(); // 다음 브레이크 시간 재계산
-                return;
+                // 현재 레벨의 남은 Duration과 다음 레벨들의 Duration 합산
+                totalNextBreakTime += blindTime; // 현재 레벨의 남은 Duration
+                for (let i = currentLevel + 1; i < blinds.length; i++) {
+                    const nextLevel = blinds[i];
+                    totalNextBreakTime += nextLevel.duration * 60; // 초로 변환
+                    if (nextLevel.break > 0) {
+                        break; // 브레이크 있는 레벨에서 종료
+                    }
+                }
+            }
+
+            // 타이머 업데이트
+            document.getElementById('nextBreak').innerText = formatTotalTime(totalNextBreakTime);
+        }
+
+        function updateTimers() {
+            document.getElementById('blindTimer').innerText = formatBlindTime(blindTime);
+            document.getElementById('totalTime').innerText = formatTotalTime(totalTimeElapsed);
+            updateNextBreakTimer(); // 다음 브레이크 타이머 업데이트
+            updateProgressBar(blindTime);
+        }
+
+        function updateProgressBar(remainingTime) {
+            const current = blinds[currentLevel];
+            const totalDuration = current.duration * 60;
+            const percentage = ((totalDuration - remainingTime) / totalDuration) * 100;
+            const progressBar = document.getElementById('progressBar');
+            const marker = document.getElementById('marker');
+            progressBar.style.width = `${percentage}%`;
+            marker.style.left = `${percentage}%`;
+        }
+
+        function formatBlindTime(seconds) {
+            const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
+            return `${minutes}:${secs}`;
+        }
+
+        function formatTotalTime(seconds) {
+            const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+            const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+            const secs = String(seconds % 60).padStart(2, '0');
+            return `${hours}:${minutes}:${secs}`;
+        }
+
+        function updateTimer() {
+            if (blindTime > 0) {
+                blindTime -= 1; // 블라인드 타이머 감소
+            }
+            totalTimeElapsed += 1; // 총 경과 시간 증가
+            updateTimers();
+            
+            if (blindTime <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                handleBreak();
             }
         }
 
-        if (timeLeft > 0) {
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            timerElement.innerText = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            totalTime++;
-            totalTimeElement.innerText = formatTime(totalTime); // total time을 시:분:초 형식으로 표시
-            timeLeft--;
-
-            // 마커 및 경과한 시간 업데이트
-            const progressBar = document.getElementById('progressBar');
-            const totalDuration = blinds[currentLevel].duration * 60;
-            const markerPosition = ((totalDuration - timeLeft) / totalDuration) * progressBar.clientWidth;
-
-            marker.style.left = `${markerPosition}px`;
-            elapsed.style.width = `${markerPosition}px`; // 경과한 시간 만큼의 너비
-
-            if (timeLeft <= 0) {
-                // 레벨이 끝날 때
-                if (currentLevel === 4 || currentLevel === 9 || currentLevel === 14 || currentLevel === 19) {
-                    isInBreak = true; // 브레이크 상태로 변경
-                    alertSound.play(); // 브레이크 시작 시 알림 소리 재생
-                    breakCountdown = breakTime; // 브레이크 카운트다운 초기화
-                    nextBreakElement.innerText = '00:00:00'; // 브레이크 시 다음 브레이크 타이머를 0으로 설정
-                } else {
-                    currentLevel++;
-                    alertSound.play(); // 알림 소리 재생
-                    timeLeft = displayBlindInfo();
-                    calculateNextBreakTime(); // 다음 브레이크 시간 재계산
-                }
+        function handleBreak() {
+            const current = blinds[currentLevel];
+            if (current.break > 0) {
+                blindTime = current.break * 60; // 브레이크 시간을 초로 설정
+                document.getElementById('currentLevel').innerText = "Break Time";
+                breakSound.play(); // Break 시작 시 소리 재생
+                updateTimers();
+                timerInterval = setInterval(updateBreakTimer, 1000);
+            } else {
+                nextLevel();
             }
         }
 
-        // next break 타이머 카운트다운
-        if (nextBreakTime > 0) {
-            nextBreakTime--; // next break 타이머를 1초 줄임
-            nextBreakElement.innerText = formatTime(nextBreakTime);
-        }
-    }
-}
-
-
-function formatTime(seconds) {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const remainingSeconds = seconds % 60;
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
-}
-
-        function setTimer(event) {
-            const progressBar = document.getElementById('progressBar');
-            const progress = 1 - (event.offsetX / progressBar.clientWidth); // 클릭한 위치 비율 반전
-            const newDuration = Math.floor(progress * blinds[currentLevel].duration * 60); // 새로운 초 계산
-            timeLeft = newDuration;
-            updateProgressBar();
-            calculateNextBreakTime(); // 브레이크 시간 새로 계산
+        function updateBreakTimer() {
+            if (blindTime > 0) {
+                blindTime -= 1; // 브레이크 타이머 감소
+            }
+            totalTimeElapsed += 1; // 총 경과 시간 증가
+            updateTimers();
+            
+            if (blindTime <= 0) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+                nextLevel();
+            }
         }
 
-        function updateProgressBar() {
-            const progress = document.getElementById('progress');
-            const progressBar = document.getElementById('progressBar');
-            const percentage = ((totalTime / (blinds[currentLevel].duration * 60)) * 100);
-            progress.style.width = `${percentage}%`;
+        function toggleTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            } else {
+                timerInterval = setInterval(updateTimer, 1000);
+            }
         }
 
-        // 이전 레벨 버튼 이벤트
-        document.getElementById('prevLevelButton').addEventListener('click', () => {
-            if (isInBreak) {
-                // 브레이크 상태에서 이전 레벨로 넘어가기
-                isInBreak = false; // 브레이크 상태 변경
-                breakIndicator.style.display = "none"; // 브레이크 표시 숨김
-                alertSound.play(); // 브레이크 종료 시 알림 소리 재생
-                if (currentLevel > 0) {
-                    currentLevel--;
-                    timeLeft = displayBlindInfo(); // 이전 레벨의 시간 설정
-                    calculateNextBreakTime(); // 다음 브레이크 시간 재계산
-                }
-            } else if (currentLevel > 0) {
+        function previousLevel() {
+            if (currentLevel > 0) {
                 currentLevel--;
-                timeLeft = displayBlindInfo();
-                calculateNextBreakTime(); // 다음 브레이크 시간 재계산
+                updateBlinds();
             }
-        });
-
-        // 다음 레벨 버튼 이벤트
-        document.getElementById('nextLevelButton').addEventListener('click', () => {
-            if (isInBreak) {
-                // 브레이크 상태에서 다음 레벨로 넘어가기
-                isInBreak = false; // 브레이크 상태 변경
-                breakIndicator.style.display = "none"; // 브레이크 표시 숨김
-                currentLevel++;
-                timeLeft = displayBlindInfo(); // 다음 레벨의 시간 설정
-                calculateNextBreakTime(); // 다음 브레이크 시간 재계산
-            } else if (currentLevel < blinds.length - 1) {
-                currentLevel++;
-                timeLeft = displayBlindInfo();
-                calculateNextBreakTime(); // 다음 브레이크 시간 재계산
-            }
-        });
-
-// 재생 버튼 클릭 이벤트
-document.getElementById('pauseButton').addEventListener('click', () => {
-    isPaused = !isPaused; // 일시정지 상태 토글
-    document.getElementById('pauseButton').innerText = isPaused ? "▶" : "||"; // 버튼 텍스트 변경
-
-    const pausedIndicator = document.getElementById('pausedIndicator'); // PAUSED 표시
-
-    if (!isPaused) {
-        pausedIndicator.style.display = "none"; // 재생 시 PAUSED 숨김
-        if (!timerInterval) { // 타이머가 작동 중이 아닐 때만 시작
-            timerInterval = setInterval(updateTimer, 1000); // 타이머 시작
         }
-    } else {
-        pausedIndicator.style.display = "block"; // 일시정지 시 PAUSED 보임
-        clearInterval(timerInterval); // 타이머 일시정지
-        timerInterval = null; // 인터벌 초기화
-    }
-});
 
-// 10초 이전으로 이동하는 버튼 이벤트
-document.getElementById('rewindButton').addEventListener('click', () => {
-    timeLeft = Math.max(0, timeLeft + 10); // 남은 시간이 10초 이상일 경우만 이동
-    nextBreakTime = Math.max(0, nextBreakTime + 10); // nextBreakTime도 10초 증가
-    updateTimer(); // 타이머 업데이트
-});
-
-// 10초 이후로 이동하는 버튼 이벤트
-document.getElementById('forwardButton').addEventListener('click', () => {
-    if (timeLeft > 10) { // 잔여 시간이 10초 초과일 경우에만 작동
-        timeLeft = Math.min(blinds[currentLevel].duration * 60, timeLeft - 10); // 최대 시간을 넘지 않도록 조정
-        nextBreakTime = Math.max(0, nextBreakTime - 10); // nextBreakTime을 10초 감소
-    }
-    // timeLeft가 10초 이하일 경우 아무것도 하지 않음
-    updateTimer(); // 타이머 업데이트
-});
-
-
-        // 드롭다운 메뉴 초기값 설정
-        const chipDropdown = document.getElementById('chipDropdown');
-        chipDropdown.value = selectedChipValue; // 드롭다운 초기값 설정
-
-        // 드롭다운 메뉴 이벤트
-        chipDropdown.addEventListener('change', (event) => {
-            selectedChipValue = Number(event.target.value); // 선택한 칩 값 저장
-        });
-
-        // 플레이어 추가 버튼 이벤트
-        document.getElementById('addPlayerButton').addEventListener('click', () => {
-            playerCount++;
-            currentPlayersElement.innerText = playerCount;
-
-            // 총 플레이어 수 Y 값 증가
-            let totalPlayersCount = Number(totalPlayersElement.innerText) || 0; // Y 값 가져오기
-            totalPlayersCount++; // Y 값 증가
-            totalPlayersElement.innerText = totalPlayersCount; // 업데이트
-
-            // 선택한 칩 값만큼 TOTAL CHIPS에 더하기
-            totalChips += selectedChipValue;
-            totalChipsElement.innerText = formatNumber(totalChips);
-
-            // 평균 스택 업데이트
-            updateAvrStack();
-        });
-
-        // 플레이어 제거 버튼 이벤트
-        document.getElementById('removePlayerButton').addEventListener('click', () => {
-            if (playerCount > 0) {
-                playerCount--;
-                currentPlayersElement.innerText = playerCount;
-
-                // 총 플레이어 수(totalPlayers) 값은 변경하지 않음
-                updateAvrStack(); // 평균 스택 업데이트
-            }
-        });
-
-        // 평균 스택 계산
-        function updateAvrStack() {
-            if (playerCount > 0) {
-                const avrStack = Math.ceil(totalChips / playerCount);
-                avrStackElement.innerText = formatNumber(avrStack);
+        function nextLevel() {
+            if (currentLevel < blinds.length - 1) {
+                currentLevel++;
+                updateBlinds();
+            levelChangeSound.play(); // 레벨 변경 시 소리 재생
+                startTimer();
             } else {
-                avrStackElement.innerText = '0'; // 플레이어가 없을 경우 0으로 표시
+                alert("마지막 레벨입니다.");
             }
         }
-// Heads-up 버튼 이벤트
-document.getElementById('headsUpButton').addEventListener('click', () => {
-    const confirmation = confirm("진행하겠습니까?");
-    if (confirmation) {
-        // 현재 레벨의 남은 시간을 그대로 두고 다음 레벨부터 5분으로 설정
-        for (let i = currentLevel + 1; i < blinds.length; i++) {
-            blinds[i].duration = 5; // 다음 레벨의 지속 시간을 5분으로 설정
+
+        function startTimer() {
+            blindTime = blinds[currentLevel].duration * 60; // 다음 레벨의 Duration을 초로 설정
+            updateTimers();
+            clearInterval(timerInterval);
+            timerInterval = setInterval(updateTimer, 1000);
         }
-        // timeLeft는 현재 레벨의 남은 시간으로 유지
-        displayBlindInfo(); // 블라인드 정보를 업데이트
-        calculateNextBreakTime(); // 다음 브레이크 시간 재계산
+
+        function confirmHeadsUp() {
+            document.getElementById('confirmationModal').style.display = 'block';
+        }
+
+let totalChips = 0; // 총 칩 수량
+let playersX = 0; // 플레이어 수 X
+let playersY = 0; // 플레이어 수 Y
+
+function increaseChipAmount() {
+    const selectedChip = document.querySelector('input[name="chipAmount"]:checked');
+    if (selectedChip) {
+        const chipAmount = parseInt(selectedChip.value, 10);
+        totalChips += chipAmount; // 총 칩 수량 증가
+        playersX += 1; // 플레이어 수 X 증가
+        playersY += 1; // 플레이어 수 Y 증가
+        updateDisplay(); // UI 업데이트
     }
-});
+}
+
+function decreaseChipAmount() {
+    if (playersX > 0) { // 플레이어 수 X가 0보다 클 때만 감소
+        playersX -= 1; // 플레이어 수 X 감소
+        updateDisplay(); // UI 업데이트
+    }
+}
+
+function formatNumberWithCommas(number) {
+    return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function updateDisplay() {
+    // TOTAL CHIPS 업데이트
+    document.getElementById('totalChips').innerText = formatNumberWithCommas(totalChips);
+    document.getElementById('players').innerText = `${playersX} / ${playersY}`; // PLAYERS 업데이트
+
+    // AVR STACK 계산
+    const avrStack = playersX > 0 ? Math.round(totalChips / playersX) : 0; // 플레이어 수 X가 0보다 클 때만 계산
+    document.getElementById('avrStack').innerText = formatNumberWithCommas(avrStack); // AVR STACK 업데이트
+
+    // TOTAL CHIPS를 빅 블라인드로 나누어 XX BB 계산
+    const current = blinds[currentLevel]; // 현재 레벨의 블라인드 정보 가져오기
+    const bigBlindValue = current.big; // 현재 레벨의 빅 블라인드
+    const bbAmount = bigBlindValue > 0 ? Math.round((totalChips / bigBlindValue) * 10) / 10 : 0; // 소수점 둘째 자리에서 반올림
+    document.getElementById('totalChipsBB').innerText = `(${bbAmount}BB)`; // BB 값 업데이트
+
+    // AVR STACK BB 계산 (totalChipsBB 값이 바뀔 때마다 재계산)
+    const avrStackBB = playersX > 0 ? Math.round(bbAmount / playersX * 10) / 10 : 0; // AVR STACK BB 계산
+    document.getElementById('avrStackBB').innerText = `(${avrStackBB}BB)`; // AVR STACK BB 값 업데이트
+}
+
+function toggleTimer() {
+    if (timerInterval) {
+        clearInterval(timerInterval);
+        timerInterval = null;
+        document.getElementById('pauseOverlay').style.display = 'block'; // PAUSE 박스 표시
+    } else {
+        timerInterval = setInterval(updateTimer, 1000);
+        document.getElementById('pauseOverlay').style.display = 'none'; // PAUSE 박스 숨기기
+    }
+}
 
 
-        // 숫자에 쉼표 추가
-        function formatNumber(num) {
-            return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+function startHeadsUp() {
+    headsUpMode = true;
+    document.getElementById('confirmationModal').style.display = 'none';
+
+    // 현재 레벨의 Duration은 유지하고, 다음 레벨부터 마지막 레벨까지의 Duration을 5분으로 설정
+    for (let i = currentLevel + 1; i < blinds.length; i++) {
+        blinds[i].duration = 5; // 다음 레벨의 duration을 5분으로 설정
+    }
+
+    updateNextBreakTimer(); // 다음 브레이크 타이머 업데이트
+    updateTimers(); // UI 업데이트
+}
+
+        function cancelHeadsUp() {
+            document.getElementById('confirmationModal').style.display = 'none';
         }
 
-        timeLeft = displayBlindInfo();
-        timerInterval = setInterval(updateTimer, 1000);
-        calculateNextBreakTime(); // 초기 브레이크 시간 계산
+        function increaseTimer(seconds) {
+            blindTime += seconds;
+            updateTimers();
+        }
+
+        function decreaseTimer(seconds) {
+            if (blindTime > seconds) {
+                blindTime -= seconds;
+                updateTimers();
+            }
+        }
+
+        function setCustomTime() {
+            const customTime = document.getElementById('customTime').value;
+            blindTime = Math.round(parseInt(customTime, 10) / 1000); // 초로 변환 및 반올림
+            updateTimers();
+        }
+
+        function handleMarkerDrag(event) {
+            const progressContainer = document.getElementById('progress');
+            const boundingBox = progressContainer.getBoundingClientRect();
+            const offsetX = event.clientX - boundingBox.left;
+            const percentage = Math.min(Math.max(offsetX / boundingBox.width, 0), 1) * 100;
+
+            const current = blinds[currentLevel];
+            const totalDuration = current.duration * 60;
+            const newRemainingTime = Math.round(totalDuration * (1 - percentage / 100));
+
+            document.getElementById('marker').style.left = `${percentage}%`;
+            updateProgressBar(newRemainingTime);
+            blindTime = newRemainingTime; // 블라인드 타이머 업데이트
+        }
+
+        function dragStart(event) {
+            event.preventDefault();
+            const handleMouseMove = (e) => handleMarkerDrag(e);
+            const handleMouseUp = () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+        }
+
+        document.getElementById('marker').addEventListener('mousedown', (event) => dragStart(event));
+
+        updateBlinds();
     </script>
 </body>
 </html>
+
