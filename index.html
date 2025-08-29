@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- GitHub의 raw 파일 URL을 사용해야 직접 재생이 가능합니다. -->
+    <audio id="levelup-sound" src="https://raw.githubusercontent.com/handream7/holdem-timer/c26ac59ba57bf0a51ff16859b1c7259e2ab78f75/levelup.mp3" preload="auto"></audio>
+    <audio id="break-sound" src="https://raw.githubusercontent.com/handream7/holdem-timer/c26ac59ba57bf0a51ff16859b1c7259e2ab78f75/break.mp3" preload="auto"></audio>
 
     <!-- 1. 시작 화면 -->
     <div id="landing-page" class="page-container">
@@ -109,7 +112,10 @@
                 </div>
             </div>
             <div class="bottom-section">
-                <button id="go-home-btn">첫 화면으로 돌아가기</button>
+                <div class="bottom-controls">
+                    <button id="go-home-btn">첫 화면으로 돌아가기</button>
+                    <button id="sound-toggle-btn">소리 끄기</button>
+                </div>
                 <div class="table-container">
                     <table id="realtime-data-table">
                         <thead>

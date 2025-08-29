@@ -353,7 +353,45 @@ async function adjustTime(seconds) {
 async function setHeadsUp() {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
-    alert('헤즈업 기능은 외부 데이터 연동 후 구현 예정입니다.');
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+
+    const gameData = doc.data();
+    const settings = gameData.settings;
+    const schedule = buildSchedule(settings);
+    const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
+
+    // 현재 레벨이 몇 번째 '블라인드 레벨'인지 찾습니다 (휴식 시간 제외).
+    let currentBlindLevelNumber = 0;
+    if (schedule[currentLevelIndex] && !schedule[currentLevelIndex].isBreak) {
+        currentBlindLevelNumber = schedule[currentLevelIndex].level;
+    } else {
+        for (let i = currentLevelIndex; i >= 0; i--) {
+            if (schedule[i] && !schedule[i].isBreak) {
+                currentBlindLevelNumber = schedule[i].level;
+                break;
+            }
+        }
+    }
+
+    // 새로운 블라인드 설정을 만듭니다.
+    const newBlinds = settings.blinds.map(blind => {
+        // 현재 블라인드 레벨보다 높은 레벨들의 시간을 5분으로 변경합니다.
+        if (blind.level > currentBlindLevelNumber) {
+            return { ...blind, duration: 5 };
+        }
+        return blind;
+    });
+
+    const newSettings = { ...settings, blinds: newBlinds };
+
+    // Firebase에 변경된 설정과 플레이어 수를 업데이트합니다.
+    await gameRef.update({
+        settings: newSettings,
+        players: 2
+    });
+
+    alert('헤즈업 모드가 설정되었습니다. 다음 레벨부터 5분으로 적용됩니다.');
 }
 async function seekTime(value, finalUpdate) {
     if (!currentGameId) return;
