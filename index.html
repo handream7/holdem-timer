@@ -3,174 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>홀덤 블라인드 타이머 설정</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 50px;
-            background-color: black; /* 배경색 검정 */
-            color: white; /* 글씨색 하얀색 */
-        }
-        table {
-            margin: 20px auto; /* 테이블과 버튼 간격 조정 */
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-        th {
-            background-color: #333; /* 헤더 배경색 */
-        }
-        input {
-            width: 80px;
-            color: black; /* 입력 필드 글씨색 */
-        }
-        button {
-            margin: 15px 0;
-            padding: 15px 15px; /* 버튼 크기 조정 */
-            font-size: 14오후 11:28 2025-01-07 화px; /* 버튼 글씨 크기 조정 */
-            background-color: #555; /* 버튼 배경색 */
-            color: white; /* 버튼 글씨색 */
-            border: none; /* 테두리 없애기 */
-            cursor: pointer; /* 마우스 커서 변경 */
-        }
-        button:hover {
-            background-color: #777; /* 버튼 호버 색상 */
-        }
-    </style>
+    <title>홀덤 토너먼트 타이머</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>홀덤 블라인드 설정</h1>
-    <button type="button" onclick="startTimer()">플레이</button>
-    
-    <div>
-        <label for="durationUniform">Duration 한방에 변경:</label>
-        <select id="durationUniform">
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="10">10</option>
-            <option value="12">12</option>
-            <option value="15">15</option>
-        </select>
-        <button type="button" onclick="uniformDuration()">확인</button>
+    <!-- 1. 시작 화면 -->
+    <div id="landing-page" class="page-container">
+        <h1>홀덤 토너먼트 타이머</h1>
+        <div class="button-group">
+            <button id="create-game-btn">게임 생성</button>
+            <!-- '현재 진행 게임'은 링크를 직접 받는 방식으로 대체됩니다 -->
+        </div>
     </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Level</th>
-                <th>Small</th>
-                <th>Big</th>
-                <th>Ante</th>
-                <th>Duration (분)</th>
-                <th>Break (분)</th>
-            </tr>
-        </thead>
-        <tbody id="blindTableBody">
-            <!-- 자바스크립트로 레벨을 추가합니다. -->
-        </tbody>
-    </table>
+    <!-- 2. 설정 화면 -->
+    <div id="settings-page" class="page-container" style="display: none;">
+        <h2>Holdem Timer Settings</h2>
+        <div class="top-settings-grid">
+            <label for="break-levels">Break After Levels (e.g., 5,10,15):</label>
+            <input type="text" id="break-levels" value="5, 10, 15, 20, 25">
+            <label for="break-duration">Break Duration (minutes):</label>
+            <input type="number" id="break-duration" value="7">
+        </div>
+        <div class="set-all-durations">
+            <label for="all-duration-spinner">Set All Durations (min):</label>
+            <input type="number" id="all-duration-spinner" value="15">
+            <button id="apply-all-durations-btn">Apply</button>
+        </div>
+        <div class="blind-grid-header">
+            <div>Level</div><div>Small</div><div>Big</div><div>Ante</div><div>Duration</div><div></div>
+        </div>
+        <div id="blind-grid-body" class="blind-grid-body"></div>
+        <button id="play-button">PLAY</button>
+    </div>
 
-    <script>
-        const blindTableBody = document.getElementById('blindTableBody');
+    <!-- 3. 타이머 화면 -->
+    <div id="timer-page" class="page-container" style="display: none;">
+        <div class="timer-layout">
+            <!-- 좌측 정보 패널 -->
+            <div class="left-panel">
+                <div>
+                    <p class="info-label">PLAYERS</p>
+                    <p id="players-info" class="info-value">-/-</p>
+                </div>
+                 <div>
+                    <p class="info-label">TOTAL CHIPS</p>
+                    <p id="total-chips-info" class="info-value">-</p>
+                </div>
+                <div>
+                    <p class="info-label">AVR STACK</p>
+                    <p id="avr-stack-info" class="info-value">-</p>
+                </div>
+            </div>
 
-        const defaultBlinds = [
-            [100, 200, 200, 15, 0],
-            [200, 300, 300, 15, 0],
-            [200, 400, 400, 15, 0],
-            [300, 500, 500, 15, 0],
-            [300, 600, 600, 15, 7],
-            [400, 800, 800, 15, 0],
-            [500, 1000, 1000, 15, 0],
-            [600, 1200, 1200, 15, 0],
-            [800, 1500, 1500, 15, 0],
-            [1000, 1500, 1500, 15, 7],
-            [1000, 2000, 2000, 12, 0],
-            [1500, 2500, 2500, 12, 0],
-            [1500, 3000, 3000, 12, 0],
-            [2000, 4000, 4000, 12, 0],
-            [2500, 5000, 5000, 12, 7],
-            [3000, 6000, 6000, 8, 0],
-            [4000, 8000, 8000, 8, 0],
-            [5000, 10000, 10000, 8, 0],
-            [6000, 12000, 12000, 8, 0],
-            [8000, 16000, 16000, 8, 7],
-            [10000, 20000, 20000, 6, 0],
-            [15000, 25000, 25000, 6, 0],
-            [15000, 30000, 30000, 6, 0],
-            [20000, 40000, 40000, 6, 0],
-            [25000, 50000, 50000, 6, 0],
-            [30000, 60000, 60000, 6, 0],
-        ];
+            <!-- 중앙 타이머 패널 -->
+            <div class="center-panel">
+                <h2 id="level-label">Level 1</h2>
+                <h1 id="timer-label">00:00</h1>
+                <p id="blinds-label">Blinds: - / -</p>
+                <p id="next-blinds-label">Next: - / -</p>
+            </div>
 
-        for (let i = 1; i <= 26; i++) {
-            const values = defaultBlinds[i - 1];
-            blindTableBody.innerHTML += `
-                <tr>
-                    <td>${i}</td>
-                    <td><input type="text" id="small${i}" value="${formatNumberWithCommas(values[0])}" required oninput="formatInput(this)"></td>
-                    <td><input type="text" id="big${i}" value="${formatNumberWithCommas(values[1])}" required oninput="formatInput(this)"></td>
-                    <td><input type="text" id="ante${i}" value="${formatNumberWithCommas(values[2])}" required oninput="formatInput(this)"></td>
-                    <td>
-                        <input type="number" id="dur${i}" value="${values[3]}" required>
-                        <button type="button" onclick="setDuration(${i})">이하통일</button> <!-- 각 셀에 이하통일 버튼 추가 -->
-                    </td>
-                    <td><input type="number" id="brk${i}" value="${values[4]}" required></td>
-                </tr>
-            `;
-        }
+            <!-- 우측 컨트롤 패널 -->
+            <div class="right-panel">
+                <div class="timer-controls">
+                    <button id="prev-level-btn">&lt;&lt;</button>
+                    <button id="play-pause-btn">&gt;</button>
+                    <button id="next-level-btn">&gt;&gt;</button>
+                </div>
+                <div class="share-link-box">
+                    <p>Share Link:</p>
+                    <input type="text" id="share-link-input" readonly>
+                    <button id="copy-link-btn">Copy</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        function formatInput(input) {
-            const value = input.value.replace(/[^0-9]/g, '');
-            input.value = formatNumberWithCommas(value);
-        }
+    <!-- Firebase SDK 추가 -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
 
-        function formatNumberWithCommas(number) {
-            return number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-        }
-
-        function uniformDuration() {
-            const selectedDuration = document.getElementById('durationUniform').value;
-            for (let i = 1; i <= 26; i++) {
-                const durInput = document.getElementById(`dur${i}`);
-                durInput.value = selectedDuration;
-            }
-        }
-
-        function setDuration(level) {
-            const selectedDur = document.getElementById(`dur${level}`).value;
-            for (let i = 1; i <= 26; i++) {
-                const durInput = document.getElementById(`dur${i}`);
-                durInput.value = selectedDur;
-            }
-        }
-
-        function startTimer() {
-            const blinds = [];
-            for (let i = 1; i <= 26; i++) {
-                const small = document.getElementById(`small${i}`).value.replace(/,/g, '');
-                const big = document.getElementById(`big${i}`).value.replace(/,/g, '');
-                const ante = document.getElementById(`ante${i}`).value.replace(/,/g, '');
-                const dur = document.getElementById(`dur${i}`).value;
-                const brk = document.getElementById(`brk${i}`).value;
-
-                if (small && big && dur) {
-                    blinds.push({
-                        level: i,
-                        small: small,
-                        big: big,
-                        ante: ante,
-                        duration: dur,
-                        break: brk
-                    });
-                }
-            }
-            localStorage.setItem('blinds', JSON.stringify(blinds));
-            window.location.href = 'timer.html';
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>
