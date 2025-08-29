@@ -4,15 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>홀덤 토너먼트 타이머</title>
+    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Add SDKs for Firebase products that you want to use -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+
     <!-- 1. 시작 화면 -->
     <div id="landing-page" class="page-container">
         <h1>홀덤 토너먼트 타이머</h1>
         <div class="button-group">
             <button id="create-game-btn">게임 생성</button>
-            <!-- '현재 진행 게임'은 링크를 직접 받는 방식으로 대체됩니다 -->
+        </div>
+        <div id="game-list-container">
+            <h2>현재 진행중인 게임</h2>
+            <div id="game-list">
+                <!-- JavaScript로 채워짐 -->
+            </div>
         </div>
     </div>
 
@@ -39,51 +49,88 @@
 
     <!-- 3. 타이머 화면 -->
     <div id="timer-page" class="page-container" style="display: none;">
-        <div class="timer-layout">
-            <!-- 좌측 정보 패널 -->
-            <div class="left-panel">
-                <div>
-                    <p class="info-label">PLAYERS</p>
-                    <p id="players-info" class="info-value">-/-</p>
+        <div class="timer-grid-layout">
+            <div class="left-column">
+                <div class="info-block">
+                    <p class="info-label">TOTAL TIME</p>
+                    <p id="total-time-info" class="info-value">00:00:00</p>
                 </div>
-                 <div>
+                <div class="info-block">
                     <p class="info-label">TOTAL CHIPS</p>
-                    <p id="total-chips-info" class="info-value">-</p>
+                    <p id="total-chips-info" class="info-value">0</p>
+                    <p id="total-chips-bb-info" class="info-subtext">(0.0 BB)</p>
                 </div>
-                <div>
+                <div class="info-block">
                     <p class="info-label">AVR STACK</p>
-                    <p id="avr-stack-info" class="info-value">-</p>
+                    <p id="avr-stack-info" class="info-value">0</p>
+                    <p id="avr-stack-bb-info" class="info-subtext">(0.0 BB)</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">PLAYERS</p>
+                    <p id="players-info" class="info-value">0/0</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">NEXT BREAK</p>
+                    <p id="next-break-time-info" class="info-value">00:00:00</p>
+                    <p id="next-break-levels-info" class="info-subtext">_ level(s) left</p>
+                </div>
+                <div class="info-block">
+                    <p class="info-label">Prize</p>
+                    <div class="prize-grid">
+                        <span>1st:</span><span id="prize-1">0</span>
+                        <span>2nd:</span><span id="prize-2">0</span>
+                        <span>3rd:</span><span id="prize-3">0</span>
+                        <span>4th:</span><span id="prize-4">0</span>
+                        <span>5th:</span><span id="prize-5">0</span>
+                    </div>
                 </div>
             </div>
-
-            <!-- 중앙 타이머 패널 -->
-            <div class="center-panel">
-                <h2 id="level-label">Level 1</h2>
-                <h1 id="timer-label">00:00</h1>
-                <p id="blinds-label">Blinds: - / -</p>
-                <p id="next-blinds-label">Next: - / -</p>
-            </div>
-
-            <!-- 우측 컨트롤 패널 -->
-            <div class="right-panel">
-                <div class="timer-controls">
-                    <button id="prev-level-btn">&lt;&lt;</button>
-                    <button id="play-pause-btn">&gt;</button>
-                    <button id="next-level-btn">&gt;&gt;</button>
+            <div class="top-right-section">
+                <div class="timer-display-area">
+                    <p id="level-label">Level 1</p>
+                    <h1 id="timer-label">00:00</h1>
+                    <p id="blinds-label">Blinds: 0 / 0 / 0</p>
+                    <p id="next-blinds-label">Next Level: 0 / 0 / 0</p>
                 </div>
-                <div class="share-link-box">
-                    <p>Share Link:</p>
-                    <input type="text" id="share-link-input" readonly>
-                    <button id="copy-link-btn">Copy</button>
+                <div class="controls-area">
+                    <input type="range" min="0" max="1" value="0" step="any" class="slider" id="time-slider">
+                    <div class="timer-controls-row">
+                        <button id="prev-level-btn">&lt;&lt;</button>
+                        <button id="play-pause-btn">&gt;</button>
+                        <button id="next-level-btn">&gt;&gt;</button>
+                    </div>
+                    <div class="timer-controls-row">
+                        <button id="time-minus-btn">&lt;(10s)</button>
+                        <button id="time-plus-btn">(10s)&gt;</button>
+                    </div>
+                    <div class="timer-controls-row">
+                        <button id="heads-up-btn">HEADS-UP</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-section">
+                <button id="go-home-btn">첫 화면으로 돌아가기</button>
+                <div class="table-container">
+                    <table id="realtime-data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>플레이어</th>
+                                <th>바이인</th>
+                                <th>리바이1</th>
+                                <th>리바이2</th>
+                            </tr>
+                        </thead>
+                        <tbody id="realtime-data-tbody">
+                            <!-- 실시간 데이터 표시 영역 -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Firebase SDK 추가 -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
-
     <script src="script.js"></script>
 </body>
 </html>
+

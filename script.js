@@ -17,207 +17,370 @@ const gamesCollection = db.collection('games');
 // 전역 변수
 let currentGameId = null;
 let timerInterval = null;
-let unsubscribe = null; // Firestore 리스너 구독 해제 함수
+let unsubscribe = null;
+let isSeeking = false;
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
-    // URL에서 게임 ID 확인
     const params = new URLSearchParams(window.location.search);
     currentGameId = params.get('game');
-
     if (currentGameId) {
-        // 게임 ID가 있으면 해당 게임에 연결
         joinGame(currentGameId);
     } else {
-        // 게임 ID가 없으면 시작 화면 표시
         showPage('landing-page');
+        loadGameList();
     }
-    
-    // 이벤트 리스너 설정
     setupEventListeners();
 });
 
-// 모든 이벤트 리스너를 설정하는 함수
 function setupEventListeners() {
-    document.getElementById('create-game-btn').addEventListener('click', () => {
-        showPage('settings-page');
-        populateBlindSettings();
-    });
-
+    document.getElementById('create-game-btn').addEventListener('click', () => { showPage('settings-page'); populateBlindSettings(); });
     document.getElementById('play-button').addEventListener('click', createNewGame);
     document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
     document.getElementById('next-level-btn').addEventListener('click', () => changeLevel(1));
     document.getElementById('prev-level-btn').addEventListener('click', () => changeLevel(-1));
-    document.getElementById('copy-link-btn').addEventListener('click', copyShareLink);
+    document.getElementById('apply-all-durations-btn').addEventListener('click', applyAllDurations);
+    document.getElementById('go-home-btn').addEventListener('click', goHome);
+    document.getElementById('time-plus-btn').addEventListener('click', () => adjustTime(10));
+    document.getElementById('time-minus-btn').addEventListener('click', () => adjustTime(-10));
+    document.getElementById('heads-up-btn').addEventListener('click', setHeadsUp);
+    const timeSlider = document.getElementById('time-slider');
+    timeSlider.addEventListener('mousedown', () => { isSeeking = true; });
+    timeSlider.addEventListener('touchstart', () => { isSeeking = true; });
+    timeSlider.addEventListener('input', () => { if (isSeeking) seekTime(timeSlider.value, false); });
+    timeSlider.addEventListener('change', () => { seekTime(timeSlider.value, true); isSeeking = false; });
+    timeSlider.addEventListener('mouseup', () => { if (isSeeking) isSeeking = false; });
+    timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 }
 
-// 특정 페이지만 보여주는 함수
+function joinGame(gameId) {
+    showPage('timer-page');
+    if (unsubscribe) unsubscribe();
+    unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
+        if (doc.exists) {
+            updateTimerUI(doc.data());
+        } else {
+            alert("존재하지 않는 게임입니다.");
+            window.location.href = window.location.pathname;
+        }
+    });
+    // 실시간 데이터 가져오기 (이제 한 번만 실행됩니다)
+    startFetchingRealtimeData();
+}
+
+function goHome() {
+    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+    window.location.href = window.location.pathname;
+}
+
+
+// --- 실시간 데이터 가져오기 기능 (수정됨) ---
+function startFetchingRealtimeData() {
+    // setInterval을 제거하여 더 이상 1초마다 반복 실행되지 않도록 합니다.
+    try {
+        // CORS 정책으로 인해 실제 데이터 로딩은 어렵습니다.
+        // 고정된 가짜 데이터를 한 번만 생성하여 보여줍니다.
+        const data = generateMockData(); 
+        updateRealtimeDataTable(data);
+
+    } catch (error) {
+        console.error("데이터 로딩 중 오류 발생:", error);
+    }
+}
+
+function updateRealtimeDataTable(data) {
+    const tableBody = document.getElementById('realtime-data-tbody');
+    if (!tableBody) return;
+
+    tableBody.innerHTML = ''; 
+    data.forEach(player => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${player.rank}</td>
+            <td>${player.name}</td>
+            <td>${player.buyIn}</td>
+            <td>${player.rebuy1}</td>
+            <td>${player.rebuy2}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// 시연을 위한 가짜 데이터 생성 함수 (수정됨)
+function generateMockData() {
+    // 이제 새로운 플레이어를 추가하지 않고, 미리 정해진 5명의 목록만 반환합니다.
+    const mockPlayers = [
+        { rank: 1, name: `Player_1`, buyIn: '1', rebuy1: '1', rebuy2: '0'},
+        { rank: 2, name: `Player_2`, buyIn: '1', rebuy1: '0', rebuy2: '0'},
+        { rank: 3, name: `Player_3`, buyIn: '1', rebuy1: '1', rebuy2: '1'},
+        { rank: 4, name: `Player_4`, buyIn: '1', rebuy1: '0', rebuy2: '0'},
+        { rank: 5, name: `Player_5`, buyIn: '1', rebuy1: '0', rebuy2: '0'}
+    ];
+    return mockPlayers;
+}
+
+
+// --- 나머지 기존 함수들 ---
+function loadGameList() {
+    const gameListDiv = document.getElementById('game-list');
+    if (!gameListDiv) return;
+    gamesCollection.orderBy('startTime', 'desc').onSnapshot(snapshot => {
+        gameListDiv.innerHTML = ''; 
+        if (snapshot.empty) {
+            gameListDiv.innerHTML = '<p>생성된 게임이 없습니다.</p>';
+            return;
+        }
+        snapshot.forEach(doc => {
+            const gameData = doc.data();
+            if (gameData.startTime) {
+                const link = document.createElement('a');
+                link.href = `?game=${doc.id}`;
+                link.textContent = `${formatTimestamp(gameData.startTime)} 생성`;
+                gameListDiv.appendChild(link);
+            }
+        });
+    }, error => {
+        console.error("Error fetching game list: ", error);
+        gameListDiv.innerHTML = '<p>게임 목록을 불러오는 데 실패했습니다.</p>';
+    });
+}
+function formatTimestamp(timestamp) {
+    if (!timestamp) return "시간 정보 없음";
+    const date = timestamp.toDate();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const week = ['일', '월', '화', '수', '목', '금', '토'];
+    const dayOfWeek = week[date.getDay()];
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${year}.${month}.${day}(${dayOfWeek}) ${hours}:${minutes}`;
+}
 function showPage(pageId) {
     document.querySelectorAll('.page-container').forEach(page => {
         page.style.display = 'none';
     });
     document.getElementById(pageId).style.display = 'block';
 }
-
-// 새 게임을 생성하는 함수
 async function createNewGame() {
-    const settings = captureSettings(); // 현재 설정 값 가져오기
-    
+    const settings = captureSettings();
     try {
         const docRef = await gamesCollection.add({
             settings: settings,
-            startTime: firebase.firestore.FieldValue.serverTimestamp(), // 서버 시간 기준 시작
+            startTime: firebase.firestore.FieldValue.serverTimestamp(),
             isPaused: false,
             pauseTime: null,
             totalPauseDuration: 0,
-            currentLevelIndex: 0
+            players: 0,
+            totalPlayers: 0,
+            totalChips: 0,
         });
-        // 생성된 게임 ID로 URL 변경
         window.location.href = `?game=${docRef.id}`;
     } catch (error) {
         console.error("Error creating new game: ", error);
         alert("게임을 생성하는 데 실패했습니다.");
     }
 }
-
-// 기존 게임에 참여하는 함수
-function joinGame(gameId) {
-    showPage('timer-page');
-    const shareLinkInput = document.getElementById('share-link-input');
-    shareLinkInput.value = window.location.href;
-
-    // 실시간 데이터 변경 감지
-    if (unsubscribe) unsubscribe(); // 이전 리스너가 있다면 해제
-    unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
-        if (doc.exists) {
-            updateTimerUI(doc.data());
-        } else {
-            alert("존재하지 않는 게임입니다.");
-            window.location.href = window.location.pathname; // 홈으로 이동
-        }
-    });
-}
-
-// 타이머 UI를 업데이트하는 메인 함수
 function updateTimerUI(gameData) {
     if (!gameData || !gameData.startTime) return;
-
-    // 타이머 인터벌 관리
     if (timerInterval) clearInterval(timerInterval);
-    
     const update = () => {
         const schedule = buildSchedule(gameData.settings);
-        const now = Date.now();
-        const startTime = gameData.startTime.toDate().getTime();
-        const totalPauseDuration = gameData.totalPauseDuration || 0;
-
-        let elapsedSeconds;
-        if(gameData.isPaused){
-            const pauseTime = gameData.pauseTime.toDate().getTime();
-            elapsedSeconds = Math.floor((pauseTime - startTime - totalPauseDuration) / 1000);
-        } else {
-             elapsedSeconds = Math.floor((now - startTime - totalPauseDuration) / 1000);
-        }
-
-        let cumulativeSeconds = 0;
-        let currentLevelIndex = 0;
-
-        for (let i = 0; i < schedule.length; i++) {
-            const levelDuration = schedule[i].duration * 60;
-            if (elapsedSeconds < cumulativeSeconds + levelDuration) {
-                currentLevelIndex = i;
-                break;
-            }
-            cumulativeSeconds += levelDuration;
-            if (i === schedule.length - 1) currentLevelIndex = i;
-        }
-        
-        const timeIntoLevel = elapsedSeconds - cumulativeSeconds;
-        const timeLeft = (schedule[currentLevelIndex].duration * 60) - timeIntoLevel;
-        
-        // 화면 표시 업데이트
-        displayTime(timeLeft);
+        const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
+        displayTime(timeLeftInLevel, document.getElementById('timer-label'));
         displayLevelInfo(schedule, currentLevelIndex);
-
-        // 버튼 상태 업데이트
+        displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
+        calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
+        calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
+        
+        const players = gameData.players || 0;
+        const totalPlayers = gameData.totalPlayers || 0;
+        document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
+        
         document.getElementById('play-pause-btn').textContent = gameData.isPaused ? '>' : '||';
+        if (!isSeeking) {
+            const currentLevelDuration = schedule[currentLevelIndex].duration * 60;
+            const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
+            document.getElementById('time-slider').value = progress;
+        }
     };
-
-    update(); // 즉시 한번 실행
+    update();
     if (!gameData.isPaused) {
        timerInterval = setInterval(update, 1000);
     }
 }
-
-
-// 시간/레벨/블라인드 정보 표시
-function displayTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainderSeconds = seconds % 60;
-    document.getElementById('timer-label').textContent = `${String(minutes).padStart(2, '0')}:${String(remainderSeconds).padStart(2, '0')}`;
+function calculateCurrentState(gameData, schedule) {
+    const now = Date.now();
+    const startTime = gameData.startTime.toDate().getTime();
+    const totalPauseDuration = gameData.totalPauseDuration || 0;
+    let elapsedSeconds;
+    if (gameData.isPaused) {
+        const pauseTime = gameData.pauseTime ? gameData.pauseTime.toDate().getTime() : now;
+        elapsedSeconds = Math.floor((pauseTime - startTime - totalPauseDuration) / 1000);
+    } else {
+        elapsedSeconds = Math.floor((now - startTime - totalPauseDuration) / 1000);
+    }
+    if (elapsedSeconds < 0) elapsedSeconds = 0;
+    let cumulativeSeconds = 0;
+    let currentLevelIndex = 0;
+    for (let i = 0; i < schedule.length; i++) {
+        const levelDuration = schedule[i].duration * 60;
+        if (elapsedSeconds < cumulativeSeconds + levelDuration) {
+            currentLevelIndex = i;
+            break;
+        }
+        cumulativeSeconds += levelDuration;
+        if (i === schedule.length - 1) currentLevelIndex = i;
+    }
+    const timeIntoLevel = elapsedSeconds - cumulativeSeconds;
+    const timeLeftInLevel = (schedule[currentLevelIndex].duration * 60) - timeIntoLevel;
+    return { currentLevelIndex, timeLeftInLevel, elapsedSeconds, cumulativeSeconds };
 }
-
+function displayTime(seconds, element, withHours = false) {
+    if (seconds < 0) seconds = 0;
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (withHours) {
+        element.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    } else {
+        element.textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+}
 function displayLevelInfo(schedule, index) {
     const currentLevel = schedule[index];
     const nextLevel = schedule[index + 1];
-
     if (currentLevel.isBreak) {
         document.getElementById('level-label').textContent = "BREAK";
         document.getElementById('blinds-label').textContent = "휴식 시간입니다";
     } else {
         document.getElementById('level-label').textContent = `Level ${currentLevel.level}`;
-        document.getElementById('blinds-label').textContent = `Blinds: ${currentLevel.small} / ${currentLevel.big} (Ante: ${currentLevel.ante})`;
+        document.getElementById('blinds-label').textContent = `Blinds: ${currentLevel.small.toLocaleString()} / ${currentLevel.big.toLocaleString()} / ${currentLevel.ante.toLocaleString()}`;
     }
-
     if (nextLevel) {
-        if(nextLevel.isBreak){
+        if (nextLevel.isBreak) {
             document.getElementById('next-blinds-label').textContent = `Next: BREAK`;
         } else {
-            document.getElementById('next-blinds-label').textContent = `Next: ${nextLevel.small} / ${nextLevel.big}`;
+            document.getElementById('next-blinds-label').textContent = `Next Level ${nextLevel.level}: ${nextLevel.small.toLocaleString()} / ${nextLevel.big.toLocaleString()} / ${nextLevel.ante.toLocaleString()}`;
         }
     } else {
         document.getElementById('next-blinds-label').textContent = "Last Level";
     }
 }
-
-
-// 컨트롤 버튼 로직
+function calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex) {
+    const players = gameData.players || 0;
+    const totalChips = gameData.totalChips || 0;
+    const avrStack = players > 0 ? Math.ceil(totalChips / players) : 0;
+    const currentBigBlind = schedule[currentLevelIndex].isBreak ? (schedule[currentLevelIndex - 1]?.big || 1) : (schedule[currentLevelIndex].big || 1);
+    document.getElementById('total-chips-info').textContent = totalChips.toLocaleString();
+    document.getElementById('avr-stack-info').textContent = avrStack.toLocaleString();
+    document.getElementById('total-chips-bb-info').textContent = `(${(totalChips / currentBigBlind).toFixed(1)} BB)`;
+    document.getElementById('avr-stack-bb-info').textContent = `(${(avrStack / currentBigBlind).toFixed(1)} BB)`;
+}
+function calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex) {
+    let timeToBreak = 0;
+    let levelsLeft = 0;
+    let breakFound = false;
+    let cumulativeTimeAtCurrentLevel = 0;
+    for (let i = 0; i < currentLevelIndex; i++) {
+        cumulativeTimeAtCurrentLevel += schedule[i].duration * 60;
+    }
+    const timeRemainingInCurrentLevel = (cumulativeTimeAtCurrentLevel + schedule[currentLevelIndex].duration * 60) - elapsedSeconds;
+    timeToBreak += timeRemainingInCurrentLevel;
+    for (let i = currentLevelIndex + 1; i < schedule.length; i++) {
+        if (schedule[i].isBreak) {
+            breakFound = true;
+            break;
+        }
+        levelsLeft++;
+        timeToBreak += schedule[i].duration * 60;
+    }
+    if (breakFound) {
+        displayTime(timeToBreak, document.getElementById('next-break-time-info'), true);
+        document.getElementById('next-break-levels-info').textContent = `${levelsLeft} level(s) left`;
+    } else {
+        document.getElementById('next-break-time-info').textContent = "00:00:00";
+        document.getElementById('next-break-levels-info').textContent = "No more breaks";
+    }
+}
 async function togglePlayPause() {
+    if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
+    if (!doc.exists) return;
     const gameData = doc.data();
-
     if (gameData.isPaused) {
-        // 다시 시작
         const now = new Date();
-        const pauseTime = gameData.pauseTime.toDate();
+        const pauseTime = gameData.pauseTime ? gameData.pauseTime.toDate() : now;
         const newPauseDuration = now.getTime() - pauseTime.getTime();
-        await gameRef.update({
-            isPaused: false,
-            pauseTime: null,
-            totalPauseDuration: (gameData.totalPauseDuration || 0) + newPauseDuration
-        });
+        await gameRef.update({ isPaused: false, pauseTime: null, totalPauseDuration: (gameData.totalPauseDuration || 0) + newPauseDuration });
     } else {
-        // 일시 정지
+        await gameRef.update({ isPaused: true, pauseTime: firebase.firestore.FieldValue.serverTimestamp() });
+    }
+}
+async function changeLevel(direction) {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+    const gameData = doc.data();
+    const schedule = buildSchedule(gameData.settings);
+    const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
+    let targetLevelIndex = currentLevelIndex + direction;
+    if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) {
+        return;
+    }
+    let targetCumulativeSeconds = 0;
+    for (let i = 0; i < targetLevelIndex; i++) {
+        targetCumulativeSeconds += schedule[i].duration * 60;
+    }
+    const now = Date.now();
+    const totalPauseDuration = gameData.totalPauseDuration || 0;
+    const newStartTime = now - (targetCumulativeSeconds * 1000) - totalPauseDuration;
+    await gameRef.update({ startTime: firebase.firestore.Timestamp.fromMillis(newStartTime) });
+}
+async function adjustTime(seconds) {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+    const newStartTimeMillis = doc.data().startTime.toMillis() - (seconds * 1000);
+    await gameRef.update({
+        startTime: firebase.firestore.Timestamp.fromMillis(newStartTimeMillis)
+    });
+}
+async function setHeadsUp() {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    alert('헤즈업 기능은 외부 데이터 연동 후 구현 예정입니다.');
+}
+async function seekTime(value, finalUpdate) {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+    const gameData = doc.data();
+    const schedule = buildSchedule(gameData.settings);
+    const { currentLevelIndex, cumulativeSeconds } = calculateCurrentState(gameData, schedule);
+    const levelDuration = schedule[currentLevelIndex].duration * 60;
+    const timeIntoLevel = levelDuration > 0 ? levelDuration * value : 0;
+    const targetElapsedSeconds = cumulativeSeconds + timeIntoLevel;
+    const timeLeft = levelDuration - timeIntoLevel;
+    displayTime(timeLeft, document.getElementById('timer-label'));
+    if (finalUpdate) {
+        const now = Date.now();
+        const totalPauseDuration = gameData.totalPauseDuration || 0;
+        const newStartTime = now - (targetElapsedSeconds * 1000) - totalPauseDuration;
         await gameRef.update({
-            isPaused: true,
-            pauseTime: firebase.firestore.FieldValue.serverTimestamp()
+            startTime: firebase.firestore.Timestamp.fromMillis(newStartTime)
         });
     }
 }
-
-async function changeLevel(direction) {
-   // 이 기능은 타이머 로직이 복잡해져서 추후 구현하는 것을 권장합니다.
-   // 현재 시간 기반 로직을 수동으로 덮어쓰는 작업이 필요합니다.
-   alert('레벨 수동 변경 기능은 개발 중입니다.');
-}
-
-
-// 설정 화면 관련 함수들 (이전과 유사)
 function populateBlindSettings() {
     const blindGridBody = document.getElementById('blind-grid-body');
     blindGridBody.innerHTML = '';
-    const defaultBlindStructure = getDefaultBlinds(); // 블라인드 데이터 가져오기
+    const defaultBlindStructure = getDefaultBlinds();
     defaultBlindStructure.forEach((levelData, index) => {
         const row = document.createElement('div');
         row.className = 'blind-grid-row';
@@ -232,11 +395,29 @@ function populateBlindSettings() {
         `;
         blindGridBody.appendChild(row);
     });
-    // ... 이전과 동일한 이벤트 리스너 설정 로직
+    document.querySelectorAll('.apply-below-btn').forEach(button => {
+        button.addEventListener('click', handleApplyBelow);
+    });
 }
-
-function captureSettings(){
-    // 설정 화면의 모든 값을 읽어서 객체로 반환
+function handleApplyBelow(event) {
+    const clickedRow = event.target.closest('.blind-grid-row');
+    const clickedIndex = parseInt(clickedRow.dataset.index, 10);
+    const durationToApply = clickedRow.querySelector('.duration-input').value;
+    const allRows = document.querySelectorAll('.blind-grid-row');
+    allRows.forEach(row => {
+        const rowIndex = parseInt(row.dataset.index, 10);
+        if (rowIndex > clickedIndex) {
+            row.querySelector('.duration-input').value = durationToApply;
+        }
+    });
+}
+function applyAllDurations() {
+    const newDuration = document.getElementById('all-duration-spinner').value;
+    document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
+        input.value = newDuration;
+    });
+}
+function captureSettings() {
     const blinds = [];
     document.querySelectorAll('.blind-grid-row').forEach(row => {
         blinds.push({
@@ -249,59 +430,37 @@ function captureSettings(){
     });
     return {
         blinds: blinds,
-        breakLevels: document.getElementById('break-levels').value.split(',').map(n => parseInt(n.trim())),
+        breakLevels: document.getElementById('break-levels').value.split(',').map(n => parseInt(n.trim())).filter(Number.isFinite),
         breakDuration: parseInt(document.getElementById('break-duration').value)
     };
 }
-
 function buildSchedule(settings) {
     const schedule = [];
-    settings.blinds.forEach(level => {
-        schedule.push(level);
-        if(settings.breakLevels.includes(level.level)){
-            schedule.push({isBreak: true, duration: settings.breakDuration});
-        }
-    });
+    if (settings && settings.blinds) {
+        settings.blinds.forEach(level => {
+            schedule.push({ ...level, isBreak: false });
+            if (settings.breakLevels && settings.breakLevels.includes(level.level)) {
+                schedule.push({ isBreak: true, duration: settings.breakDuration, level: 'Break', small: 0, big: 0, ante: 0 });
+            }
+        });
+    }
     return schedule;
 }
-
-function copyShareLink() {
-    const linkInput = document.getElementById('share-link-input');
-    linkInput.select();
-    document.execCommand('copy');
-    alert('링크가 복사되었습니다!');
-}
-
-
 function getDefaultBlinds() {
     return [
-        { level: 1, small: 100, big: 200, ante: 200, duration: 15 },
-        { level: 2, small: 200, big: 300, ante: 300, duration: 15 },
-        { level: 3, small: 200, big: 400, ante: 400, duration: 15 },
-        { level: 4, small: 300, big: 500, ante: 500, duration: 15 },
-        { level: 5, small: 300, big: 600, ante: 600, duration: 15 },
-        { level: 6, small: 400, big: 800, ante: 800, duration: 15 },
-        { level: 7, small: 500, big: 1000, ante: 1000, duration: 15 },
-        { level: 8, small: 600, big: 1200, ante: 1200, duration: 15 },
-        { level: 9, small: 800, big: 1500, ante: 1500, duration: 15 },
-        { level: 10, small: 1000, big: 1500, ante: 1500, duration: 15 },
-        { level: 11, small: 1000, big: 2000, ante: 2000, duration: 12 },
-        { level: 12, small: 1500, big: 2500, ante: 2500, duration: 12 },
-        { level: 13, small: 1500, big: 3000, ante: 3000, duration: 12 },
-        { level: 14, small: 2000, big: 4000, ante: 4000, duration: 12 },
-        { level: 15, small: 2500, big: 5000, ante: 5000, duration: 12 },
-        { level: 16, small: 3000, big: 6000, ante: 6000, duration: 8 },
-        { level: 17, small: 4000, big: 8000, ante: 8000, duration: 8 },
-        { level: 18, small: 5000, big: 10000, ante: 10000, duration: 8 },
-        { level: 19, small: 6000, big: 12000, ante: 12000, duration: 8 },
-        { level: 20, small: 8000, big: 16000, ante: 16000, duration: 8 },
-        { level: 21, small: 10000, big: 20000, ante: 20000, duration: 6 },
-        { level: 22, small: 15000, big: 25000, ante: 25000, duration: 6 },
-        { level: 23, small: 20000, big: 30000, ante: 30000, duration: 6 },
-        { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
-        { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 },
-        { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
+        { level: 1, small: 100, big: 200, ante: 200, duration: 15 }, { level: 2, small: 200, big: 300, ante: 300, duration: 15 },
+        { level: 3, small: 200, big: 400, ante: 400, duration: 15 }, { level: 4, small: 300, big: 500, ante: 500, duration: 15 },
+        { level: 5, small: 300, big: 600, ante: 600, duration: 15 }, { level: 6, small: 400, big: 800, ante: 800, duration: 15 },
+        { level: 7, small: 500, big: 1000, ante: 1000, duration: 15 }, { level: 8, small: 600, big: 1200, ante: 1200, duration: 15 },
+        { level: 9, small: 800, big: 1500, ante: 1500, duration: 15 }, { level: 10, small: 1000, big: 1500, ante: 1500, duration: 15 },
+        { level: 11, small: 1000, big: 2000, ante: 2000, duration: 12 }, { level: 12, small: 1500, big: 2500, ante: 2500, duration: 12 },
+        { level: 13, small: 1500, big: 3000, ante: 3000, duration: 12 }, { level: 14, small: 2000, big: 4000, ante: 4000, duration: 12 },
+        { level: 15, small: 2500, big: 5000, ante: 5000, duration: 12 }, { level: 16, small: 3000, big: 6000, ante: 6000, duration: 8 },
+        { level: 17, small: 4000, big: 8000, ante: 8000, duration: 8 }, { level: 18, small: 5000, big: 10000, ante: 10000, duration: 8 },
+        { level: 19, small: 6000, big: 12000, ante: 12000, duration: 8 }, { level: 20, small: 8000, big: 16000, ante: 16000, duration: 8 },
+        { level: 21, small: 10000, big: 20000, ante: 20000, duration: 6 }, { level: 22, small: 15000, big: 25000, ante: 25000, duration: 6 },
+        { level: 23, small: 20000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
+        { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 }, { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
     ];
 }
-// 설정 화면의 Apply Below 등 부가 기능은 지면 관계상 생략했습니다.
-// 필요시 이전 코드의 populateBlindSettings 함수 내 로직을 참고하여 추가할 수 있습니다.
+
