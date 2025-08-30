@@ -171,6 +171,7 @@ h1, h2 {
     overflow: hidden;
     display: flex;
     flex-direction: column;
+    text-align: center;
 }
 
 /* 왼쪽 열 상세 스타일 */
@@ -256,14 +257,15 @@ h1, h2 {
 
 /* 하단 영역 상세 스타일 */
 .bottom-controls {
-    display: flex; /* 버튼들을 가로로 나열 */
-    gap: 10px; /* 버튼 사이 간격 */
+    display: flex;
+    gap: 10px;
     margin-bottom: 10px;
+    justify-content: flex-start;
 }
 
-#go-home-btn, #sound-toggle-btn {
-    padding: 6px 12px; /* 버튼 크기 축소 */
-    font-size: 0.8rem; /* 글자 크기 축소 */
+#go-home-btn, #sound-toggle-btn, #update-data-btn { /* 업데이트 버튼 스타일 추가 */
+    padding: 6px 12px;
+    font-size: 0.8rem;
     background-color: #444;
     color: #e0e0e0;
     border: 1px solid #555;
@@ -278,6 +280,7 @@ h1, h2 {
 #realtime-data-table {
     width: 100%;
     border-collapse: collapse;
+    text-align: center;
 }
 #realtime-data-table th, #realtime-data-table td {
     padding: 8px;
@@ -287,5 +290,19 @@ h1, h2 {
 #realtime-data-table th {
     color: #aaa;
     font-size: 0.9rem;
+}
+.out-btn {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    background-color: #c9302c;
+    color: white;
+    border: 1px solid #ac2925;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.out-btn:disabled {
+    background-color: #555;
+    border-color: #444;
+    cursor: not-allowed;
 }
 

@@ -46,9 +46,10 @@ function setupEventListeners() {
     document.getElementById('time-plus-btn').addEventListener('click', () => adjustTime(10));
     document.getElementById('time-minus-btn').addEventListener('click', () => adjustTime(-10));
     document.getElementById('heads-up-btn').addEventListener('click', setHeadsUp);
-    
-    // 소리 켜기/끄기 버튼 이벤트
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
+    
+    // 업데이트 버튼 이벤트 리스너 추가
+    document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
 
     const timeSlider = document.getElementById('time-slider');
     timeSlider.addEventListener('mousedown', () => { isSeeking = true; });
@@ -59,13 +60,16 @@ function setupEventListeners() {
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 }
 
+function handleUpdateData() {
+    console.log("Update button clicked!");
+    // TODO: 추후 이 곳에 외부 API로부터 데이터를 가져오는 로직을 추가합니다.
+    alert("데이터 업데이트 기능은 현재 개발 중입니다.");
+}
+
 function toggleSound() {
     isSoundOn = !isSoundOn;
     const soundBtn = document.getElementById('sound-toggle-btn');
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
-    
-    // 사용자가 상호작용을 해야 오디오 재생이 가능해지는 브라우저 정책에 대응하기 위함
-    // 소리를 켤 때, 소리 파일을 아주 짧게 재생했다가 바로 멈춰서 '준비' 상태로 만듦
     const levelupSound = document.getElementById('levelup-sound');
     if (isSoundOn && levelupSound.paused) {
         levelupSound.play().then(() => levelupSound.pause()).catch(()=>{});
@@ -74,13 +78,11 @@ function toggleSound() {
 
 function playSound(type) {
     if (!isSoundOn) return;
-
     const sound = (type === 'break') 
         ? document.getElementById('break-sound')
         : document.getElementById('levelup-sound');
-    
     if (sound) {
-        sound.currentTime = 0; // 소리를 처음부터 재생
+        sound.currentTime = 0;
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
     }
 }
@@ -88,14 +90,10 @@ function playSound(type) {
 function updateTimerUI(gameData) {
     if (!gameData || !gameData.startTime) return;
     if (timerInterval) clearInterval(timerInterval);
-
     const update = () => {
         const schedule = buildSchedule(gameData.settings);
         const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
-
-        // 레벨이 변경되었는지 확인하고 소리 재생
         if (currentLevelIndex !== lastPlayedLevelIndex) {
-            // 게임에 처음 진입한 경우는 소리 재생 안함 (lastPlayedLevelIndex가 -1일 때)
             if (lastPlayedLevelIndex !== -1) {
                 const newLevel = schedule[currentLevelIndex];
                 if (newLevel.isBreak) {
@@ -106,8 +104,6 @@ function updateTimerUI(gameData) {
             }
             lastPlayedLevelIndex = currentLevelIndex;
         }
-
-        // UI 업데이트
         displayTime(timeLeftInLevel, document.getElementById('timer-label'));
         displayLevelInfo(schedule, currentLevelIndex);
         displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
@@ -117,14 +113,12 @@ function updateTimerUI(gameData) {
         const totalPlayers = gameData.totalPlayers || 0;
         document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
         document.getElementById('play-pause-btn').textContent = gameData.isPaused ? '>' : '||';
-
         if (!isSeeking) {
             const currentLevelDuration = schedule[currentLevelIndex].duration * 60;
             const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
             document.getElementById('time-slider').value = progress;
         }
     };
-
     update();
     if (!gameData.isPaused) {
        timerInterval = setInterval(update, 1000);
@@ -139,7 +133,7 @@ function goHome() {
 
 function joinGame(gameId) {
     showPage('timer-page');
-    lastPlayedLevelIndex = -1; // 게임에 참여할 때 소리 재생 인덱스 초기화
+    lastPlayedLevelIndex = -1;
     if (unsubscribe) unsubscribe();
     unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
@@ -164,8 +158,7 @@ function startFetchingRealtimeData() {
 function updateRealtimeDataTable(data) {
     const tableBody = document.getElementById('realtime-data-tbody');
     if (!tableBody) return;
-
-    tableBody.innerHTML = ''; 
+    tableBody.innerHTML = '';
     data.forEach(player => {
         const row = document.createElement('tr');
         row.innerHTML = `
@@ -174,10 +167,25 @@ function updateRealtimeDataTable(data) {
             <td>${player.buyIn}</td>
             <td>${player.rebuy1}</td>
             <td>${player.rebuy2}</td>
+            <td><button class="out-btn" data-player-rank="${player.rank}">Out</button></td>
         `;
         tableBody.appendChild(row);
     });
+    tableBody.querySelectorAll('.out-btn').forEach(button => {
+        button.addEventListener('click', handleOutButtonClick);
+    });
 }
+
+function handleOutButtonClick(event) {
+    const playerRank = event.target.dataset.playerRank;
+    console.log(`Player ${playerRank} is Out!`);
+    const button = event.target;
+    button.disabled = true;
+    button.textContent = 'Outed';
+    button.closest('tr').style.opacity = '0.5';
+    // When using a real backend, you would send an update request here.
+}
+
 function generateMockData() {
     const mockPlayers = [
         { rank: 1, name: `Player_1`, buyIn: '1', rebuy1: '1', rebuy2: '0'},
@@ -191,9 +199,8 @@ function generateMockData() {
 function loadGameList() {
     const gameListDiv = document.getElementById('game-list');
     if (!gameListDiv) return;
-
     gamesCollection.orderBy('startTime', 'desc').onSnapshot(snapshot => {
-        gameListDiv.innerHTML = ''; 
+        gameListDiv.innerHTML = '';
         if (snapshot.empty) {
             gameListDiv.innerHTML = '<p>생성된 게임이 없습니다.</p>';
             return;
@@ -223,7 +230,6 @@ function formatTimestamp(timestamp) {
     const dayOfWeek = week[date.getDay()];
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
-
     return `${year}.${month}.${day}(${dayOfWeek}) ${hours}:${minutes}`;
 }
 
@@ -482,7 +488,7 @@ function populateBlindSettings() {
     });
 }
 function handleApplyBelow(event) {
-    const clickedRow = event.target.closest('.grid-grid-row');
+    const clickedRow = event.target.closest('.blind-grid-row');
     const clickedIndex = parseInt(clickedRow.dataset.index, 10);
     const durationToApply = clickedRow.querySelector('.duration-input').value;
     const allRows = document.querySelectorAll('.blind-grid-row');
