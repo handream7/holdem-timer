@@ -60,10 +60,37 @@ function setupEventListeners() {
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 }
 
-function handleUpdateData() {
-    console.log("Update button clicked!");
-    // TODO: 추후 이 곳에 외부 API로부터 데이터를 가져오는 로직을 추가합니다.
-    alert("데이터 업데이트 기능은 현재 개발 중입니다.");
+async function handleUpdateData() {
+    const updateButton = document.getElementById('update-data-btn');
+    updateButton.textContent = '로딩 중...';
+    updateButton.disabled = true;
+
+    try {
+        const response = await fetch('https://holdemresult.onrender.com/api/game-data');
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const apiData = await response.json();
+
+        // API 데이터의 키를 우리 코드에서 사용하는 키로 변환
+        const formattedData = apiData.map(player => ({
+            rank: player['#'],
+            name: player['Player'],
+            buyIn: player['Buy-in'],
+            rebuy1: player['Rebuy1'],
+            rebuy2: player['Rebuy2']
+        }));
+
+        updateRealtimeDataTable(formattedData);
+        // alert('플레이어 정보가 성공적으로 업데이트되었습니다.'); // 수동 업데이트이므로 성공 알림을 다시 활성화할 수 있습니다.
+
+    } catch (error) {
+        console.error("외부 데이터 업데이트 실패:", error);
+        alert(`데이터를 가져오는 데 실패했습니다. 서버가 실행 중인지, CORS 설정이 올바른지 확인해주세요.\n오류: ${error.message}`);
+    } finally {
+        updateButton.textContent = '업데이트';
+        updateButton.disabled = false;
+    }
 }
 
 function toggleSound() {
@@ -143,18 +170,10 @@ function joinGame(gameId) {
             window.location.href = window.location.pathname;
         }
     });
-    startFetchingRealtimeData();
+    // 타이머 페이지 진입 시 자동 업데이트 기능 제거
+    // handleUpdateData(); 
 }
 
-function startFetchingRealtimeData() {
-    try {
-        const data = generateMockData(); 
-        updateRealtimeDataTable(data);
-
-    } catch (error) {
-        console.error("데이터 로딩 중 오류 발생:", error);
-    }
-}
 function updateRealtimeDataTable(data) {
     const tableBody = document.getElementById('realtime-data-tbody');
     if (!tableBody) return;
@@ -167,7 +186,7 @@ function updateRealtimeDataTable(data) {
             <td>${player.buyIn}</td>
             <td>${player.rebuy1}</td>
             <td>${player.rebuy2}</td>
-            <td><button class="out-btn" data-player-rank="${player.rank}">Out</button></td>
+            <td><button class="out-btn" data-player-name="${player.name}">Out</button></td>
         `;
         tableBody.appendChild(row);
     });
@@ -177,25 +196,15 @@ function updateRealtimeDataTable(data) {
 }
 
 function handleOutButtonClick(event) {
-    const playerRank = event.target.dataset.playerRank;
-    console.log(`Player ${playerRank} is Out!`);
+    const playerName = event.target.dataset.playerName;
+    console.log(`Player ${playerName} is Out!`);
     const button = event.target;
     button.disabled = true;
     button.textContent = 'Outed';
     button.closest('tr').style.opacity = '0.5';
-    // When using a real backend, you would send an update request here.
+    // TODO: 추후 실제 플레이어 Out 처리 로직을 Firebase와 연동해야 합니다.
 }
 
-function generateMockData() {
-    const mockPlayers = [
-        { rank: 1, name: `Player_1`, buyIn: '1', rebuy1: '1', rebuy2: '0'},
-        { rank: 2, name: `Player_2`, buyIn: '1', rebuy1: '0', rebuy2: '0'},
-        { rank: 3, name: `Player_3`, buyIn: '1', rebuy1: '1', rebuy2: '1'},
-        { rank: 4, name: `Player_4`, buyIn: '1', rebuy1: '0', rebuy2: '0'},
-        { rank: 5, name: `Player_5`, buyIn: '1', rebuy1: '0', rebuy2: '0'}
-    ];
-    return mockPlayers;
-}
 function loadGameList() {
     const gameListDiv = document.getElementById('game-list');
     if (!gameListDiv) return;
@@ -547,7 +556,7 @@ function getDefaultBlinds() {
         { level: 17, small: 4000, big: 8000, ante: 8000, duration: 8 }, { level: 18, small: 5000, big: 10000, ante: 10000, duration: 8 },
         { level: 19, small: 6000, big: 12000, ante: 12000, duration: 8 }, { level: 20, small: 8000, big: 16000, ante: 16000, duration: 8 },
         { level: 21, small: 10000, big: 20000, ante: 20000, duration: 6 }, { level: 22, small: 15000, big: 25000, ante: 25000, duration: 6 },
-        { level: 23, small: 20000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
+        { level: 23, small: 15000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
         { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 }, { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
     ];
 }
