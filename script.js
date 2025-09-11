@@ -195,22 +195,42 @@ async function updateActivePlayerCount() {
     });
 }
 
-
 function toggleSound() {
     isSoundOn = !isSoundOn;
     const soundBtn = document.getElementById('sound-toggle-btn');
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
+
     const levelupSound = document.getElementById('levelup-sound');
-    if (isSoundOn && levelupSound.paused) {
-        levelupSound.play().then(() => levelupSound.pause()).catch(()=>{});
+    const breakSound = document.getElementById('break-sound');
+
+    if (isSoundOn) {
+        // 소리를 켤 때: 브라우저의 자동재생 정책 때문에 오디오를 미리 활성화 시도
+        if (levelupSound && levelupSound.paused) {
+            levelupSound.play().then(() => levelupSound.pause()).catch(e => {
+                console.error("소리 활성화 실패: 페이지와 상호작용이 더 필요할 수 있습니다.", e);
+            });
+        }
+    } else {
+        // 소리를 끌 때: 모든 소리를 즉시 멈추고 시간을 0으로 리셋
+        if (levelupSound) {
+            levelupSound.pause();
+            levelupSound.currentTime = 0;
+        }
+        if (breakSound) {
+            breakSound.pause();
+            breakSound.currentTime = 0;
+        }
     }
 }
 
 function playSound(type) {
+    // isSoundOn 상태를 확인하여 소리를 재생할지 결정
     if (!isSoundOn) return;
+
     const sound = (type === 'break') 
         ? document.getElementById('break-sound')
         : document.getElementById('levelup-sound');
+    
     if (sound) {
         sound.currentTime = 0;
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
@@ -340,7 +360,9 @@ async function showOutListModal() {
     const listElement = document.getElementById('out-player-list');
     const modal = document.getElementById('out-list-modal');
     listElement.innerHTML = '<li>목록을 불러오는 중...</li>';
-    modal.style.display = 'block';
+    
+    // 여기를 수정합니다: 'block' 대신 'flex' 사용
+    modal.style.display = 'flex';
 
     try {
         const querySnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').orderBy('outTime', 'desc').get();
