@@ -18,6 +18,7 @@ const gamesCollection = db.collection('games');
 let currentGameId = null;
 let timerInterval = null;
 let unsubscribe = null;
+let unsubscribeOutedPlayers = null; // Out 플레이어 실시간 리스너를 위한 변수 추가
 let isSeeking = false;
 let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
@@ -91,8 +92,7 @@ async function handleUpdateData() {
 
         updateRealtimeDataTable(formattedData);
         await updateTimerInfoFromPlayerData(formattedData);
-        await applyOutedPlayerStyles(); // Out 처리된 플레이어 스타일 적용
-        await updateActivePlayerCount(); // 최종 생존자 수 업데이트
+        // 실시간 리스너가 자동으로 스타일을 적용하므로 기존 스타일 적용 함수 호출은 제거합니다.
 
     } catch (error) {
         console.error("외부 데이터 업데이트 실패:", error);
@@ -102,33 +102,6 @@ async function handleUpdateData() {
         updateButton.disabled = false;
     }
 }
-
-// Out 처리된 플레이어들의 시각적 상태(회색 처리, 버튼 비활성화)를 적용하는 함수
-async function applyOutedPlayerStyles() {
-    if (!currentGameId) return;
-    try {
-        const outedPlayersSnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').get();
-        const outedPlayerNames = outedPlayersSnapshot.docs.map(doc => doc.id);
-
-        const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-        allRows.forEach(row => {
-            const outButton = row.querySelector('.out-btn');
-            if (outButton) {
-                const playerName = outButton.dataset.playerName;
-                if (outedPlayerNames.includes(playerName)) {
-                    row.style.opacity = '0.5';
-                    outButton.disabled = true;
-                } else {
-                    row.style.opacity = '1';
-                    outButton.disabled = false;
-                }
-            }
-        });
-    } catch (error) {
-        console.error("Error applying outed player styles:", error);
-    }
-}
-
 
 function updateRealtimeDataTable(data) {
     const tableBody = document.getElementById('realtime-data-tbody');
@@ -146,12 +119,10 @@ function updateRealtimeDataTable(data) {
         `;
         tableBody.appendChild(row);
 
-        // Out 버튼 클릭 이벤트
         const outButton = row.querySelector('.out-btn');
         if (outButton) {
             outButton.addEventListener('click', handleOutButtonClick);
         }
-        // 행 클릭 이벤트 (재활성화용)
         row.addEventListener('click', () => handleRowClick(row, player.name));
     });
 }
@@ -177,41 +148,132 @@ async function updateTimerInfoFromPlayerData(playersData) {
     });
 }
 
-// 현재 생존 플레이어 수를 계산하여 Firestore에 업데이트하는 함수
-async function updateActivePlayerCount() {
-    if (!currentGameId) return;
+// ========================================================
+// 여기가 수정/추가된 핵심 부분입니다.
+// ========================================================
 
+// 실시간으로 Out된 플레이어 UI를 업데이트하고 생존 플레이어 수를 DB에 반영하는 함수
+function updateOutedPlayerUI(outedPlayerNames) {
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-    let survivingPlayers = 0;
-    allRows.forEach(r => {
-        if (r.style.opacity !== '0.5') {
-            survivingPlayers++;
+    let activePlayers = 0;
+    
+    // 테이블이 아직 생성되지 않았을 수 있으므로 확인
+    if (allRows.length === 0) return;
+
+    allRows.forEach(row => {
+        const outButton = row.querySelector('.out-btn');
+        if (outButton) {
+            const playerName = outButton.dataset.playerName;
+            if (outedPlayerNames.includes(playerName)) {
+                row.style.opacity = '0.5';
+                outButton.disabled = true;
+            } else {
+                row.style.opacity = '1';
+                outButton.disabled = false;
+                activePlayers++; // Out되지 않은 플레이어 수 카운트
+            }
         }
     });
 
-    const gameRef = gamesCollection.doc(currentGameId);
-    await gameRef.update({
-        players: survivingPlayers
-    });
+    // 계산된 생존 플레이어 수를 Firestore에 업데이트
+    if (currentGameId) {
+        const gameRef = gamesCollection.doc(currentGameId);
+        gameRef.update({ players: activePlayers });
+    }
 }
+
+function joinGame(gameId) {
+    showPage('timer-page');
+    handleUpdateData(); // 플레이어 테이블을 먼저 생성
+    
+    lastPlayedLevelIndex = -1;
+    oneMinuteAlertPlayed = false;
+    
+    // 기존 리스너가 있다면 해제
+    if (unsubscribe) unsubscribe();
+    if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
+
+    // 타이머 정보 실시간 리스너
+    unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
+        if (doc.exists) {
+            updateTimerUI(doc.data());
+        } else {
+            alert("존재하지 않는 게임입니다.");
+            goHome();
+        }
+    });
+
+    // Out된 플레이어 목록 실시간 리스너 (새로 추가)
+    unsubscribeOutedPlayers = gamesCollection.doc(gameId).collection('outedPlayers')
+        .onSnapshot(snapshot => {
+            const outedPlayerNames = snapshot.docs.map(doc => doc.id);
+            updateOutedPlayerUI(outedPlayerNames);
+        }, error => {
+            console.error("Out된 플레이어 목록 실시간 동기화 실패:", error);
+        });
+}
+
+// 'Out' 버튼 클릭 시 Firestore에 데이터만 기록 (UI 업데이트는 리스너가 처리)
+async function handleOutButtonClick(event) {
+    event.stopPropagation();
+    const button = event.target;
+    const playerName = button.dataset.playerName;
+
+    if (!playerName || !currentGameId) return;
+
+    if (confirm(`'${playerName}'님을 Out 처리하시겠습니까?`)) {
+        try {
+            const outedPlayerRef = gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName);
+            await outedPlayerRef.set({ outTime: firebase.firestore.FieldValue.serverTimestamp() });
+        } catch (error) {
+            console.error("Out 처리 중 오류 발생:", error);
+            alert("플레이어 Out 처리 중 오류가 발생했습니다.");
+        }
+    }
+}
+
+// 행 클릭으로 재활성화 시 Firestore에서 데이터만 삭제 (UI 업데이트는 리스너가 처리)
+async function handleRowClick(row, playerName) {
+    const outButton = row.querySelector('.out-btn');
+    if (outButton && outButton.disabled) {
+        if (confirm(`'${playerName}'님을 다시 활성화하시겠습니까?`)) {
+            try {
+                await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).delete();
+            } catch (error) {
+                console.error("재활성화 처리 중 오류 발생:", error);
+                alert("플레이어 재활성화 중 오류가 발생했습니다.");
+            }
+        }
+    }
+}
+
+function goHome() {
+    if (unsubscribe) unsubscribe();
+    if (unsubscribeOutedPlayers) unsubscribeOutedPlayers(); // 리스너 해제
+    unsubscribe = null;
+    unsubscribeOutedPlayers = null;
+    if (timerInterval) clearInterval(timerInterval);
+    timerInterval = null;
+    window.location.href = window.location.pathname;
+}
+
+// ========================================================
+// 수정된 부분 끝
+// ========================================================
 
 function toggleSound() {
     isSoundOn = !isSoundOn;
     const soundBtn = document.getElementById('sound-toggle-btn');
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
-
     const levelupSound = document.getElementById('levelup-sound');
     const breakSound = document.getElementById('break-sound');
-
     if (isSoundOn) {
-        // 소리를 켤 때: 브라우저의 자동재생 정책 때문에 오디오를 미리 활성화 시도
         if (levelupSound && levelupSound.paused) {
             levelupSound.play().then(() => levelupSound.pause()).catch(e => {
                 console.error("소리 활성화 실패: 페이지와 상호작용이 더 필요할 수 있습니다.", e);
             });
         }
     } else {
-        // 소리를 끌 때: 모든 소리를 즉시 멈추고 시간을 0으로 리셋
         if (levelupSound) {
             levelupSound.pause();
             levelupSound.currentTime = 0;
@@ -224,13 +286,10 @@ function toggleSound() {
 }
 
 function playSound(type) {
-    // isSoundOn 상태를 확인하여 소리를 재생할지 결정
     if (!isSoundOn) return;
-
     const sound = (type === 'break') 
         ? document.getElementById('break-sound')
         : document.getElementById('levelup-sound');
-    
     if (sound) {
         sound.currentTime = 0;
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
@@ -283,85 +342,12 @@ function updateTimerUI(gameData) {
     }
 }
 
-function goHome() {
-    if (unsubscribe) { unsubscribe(); unsubscribe = null; }
-    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
-    window.location.href = window.location.pathname;
-}
-
-function joinGame(gameId) {
-    showPage('timer-page');
-    handleUpdateData(); // 게임 참가 시 플레이어 데이터 즉시 로드
-    lastPlayedLevelIndex = -1;
-    oneMinuteAlertPlayed = false;
-    if (unsubscribe) unsubscribe();
-    unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
-        if (doc.exists) {
-            updateTimerUI(doc.data());
-        } else {
-            alert("존재하지 않는 게임입니다.");
-            window.location.href = window.location.pathname;
-        }
-    });
-}
-
-// 'Out' 버튼 클릭 처리 함수
-async function handleOutButtonClick(event) {
-    event.stopPropagation(); // 행 클릭 이벤트가 같이 발생하는 것을 방지
-    const button = event.target;
-    const playerName = button.dataset.playerName;
-
-    if (!playerName || !currentGameId) return;
-
-    if (confirm(`'${playerName}'님을 Out 처리하시겠습니까?`)) {
-        const row = button.closest('tr');
-        row.style.opacity = '0.5';
-        button.disabled = true;
-
-        try {
-            const outedPlayerRef = gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName);
-            await outedPlayerRef.set({
-                outTime: firebase.firestore.FieldValue.serverTimestamp()
-            });
-            await updateActivePlayerCount();
-        } catch (error) {
-            console.error("Out 처리 중 오류 발생:", error);
-            row.style.opacity = '1';
-            button.disabled = false;
-            alert("플레이어 Out 처리 중 오류가 발생했습니다.");
-        }
-    }
-}
-
-// 행 클릭 처리 함수 (Out된 플레이어 재활성화)
-async function handleRowClick(row, playerName) {
-    const outButton = row.querySelector('.out-btn');
-    if (outButton && outButton.disabled) { // 버튼이 비활성화된 (Out 처리된) 상태일 때만
-        if (confirm(`'${playerName}'님을 다시 활성화하시겠습니까?`)) {
-            row.style.opacity = '1';
-            outButton.disabled = false;
-
-            try {
-                await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).delete();
-                await updateActivePlayerCount();
-            } catch (error) {
-                console.error("재활성화 처리 중 오류 발생:", error);
-                row.style.opacity = '0.5';
-                outButton.disabled = true;
-                alert("플레이어 재활성화 중 오류가 발생했습니다.");
-            }
-        }
-    }
-}
-
 // 'Out 목록' 모달을 보여주는 함수
 async function showOutListModal() {
     if (!currentGameId) return;
     const listElement = document.getElementById('out-player-list');
     const modal = document.getElementById('out-list-modal');
     listElement.innerHTML = '<li>목록을 불러오는 중...</li>';
-    
-    // 여기를 수정합니다: 'block' 대신 'flex' 사용
     modal.style.display = 'flex';
 
     try {
@@ -372,7 +358,7 @@ async function showOutListModal() {
         } else {
             querySnapshot.forEach(doc => {
                 const li = document.createElement('li');
-                li.textContent = doc.id; // 플레이어 이름이 문서 ID임
+                li.textContent = doc.id;
                 listElement.appendChild(li);
             });
         }
