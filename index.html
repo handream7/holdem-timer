@@ -4,18 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>홀덤 토너먼트 타이머</title>
-    <!-- Firebase App (the core Firebase SDK) is always required and must be listed first -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <!-- Add SDKs for Firebase products that you want to use -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- GitHub의 raw 파일 URL을 사용해야 직접 재생이 가능합니다. -->
     <audio id="levelup-sound" src="https://raw.githubusercontent.com/handream7/holdem-timer/c26ac59ba57bf0a51ff16859b1c7259e2ab78f75/levelup.mp3" preload="auto"></audio>
     <audio id="break-sound" src="https://raw.githubusercontent.com/handream7/holdem-timer/c26ac59ba57bf0a51ff16859b1c7259e2ab78f75/break.mp3" preload="auto"></audio>
 
-    <!-- 1. 시작 화면 -->
     <div id="landing-page" class="page-container">
         <h1>홀덤 토너먼트 타이머</h1>
         <div class="button-group">
@@ -24,12 +20,10 @@
         <div id="game-list-container">
             <h2>현재 진행중인 게임</h2>
             <div id="game-list">
-                <!-- JavaScript로 채워짐 -->
-            </div>
+                </div>
         </div>
     </div>
 
-    <!-- 2. 설정 화면 -->
     <div id="settings-page" class="page-container" style="display: none;">
         <h2>Holdem Timer Settings</h2>
         <div class="top-settings-grid">
@@ -50,7 +44,6 @@
         <button id="play-button">PLAY</button>
     </div>
 
-    <!-- 3. 타이머 화면 -->
     <div id="timer-page" class="page-container" style="display: none;">
         <div class="timer-grid-layout">
             <div class="left-column">
@@ -115,8 +108,8 @@
                 <div class="bottom-controls">
                     <button id="go-home-btn">첫 화면으로 돌아가기</button>
                     <button id="sound-toggle-btn">소리 끄기</button>
-                    <button id="update-data-btn">업데이트</button> <!-- 업데이트 버튼 추가 -->
-                </div>
+                    <button id="update-data-btn">업데이트</button>
+                    <button id="out-list-btn">Out 목록</button> </div>
                 <div class="table-container">
                     <table id="realtime-data-table">
                         <thead>
@@ -130,15 +123,22 @@
                             </tr>
                         </thead>
                         <tbody id="realtime-data-tbody">
-                            <!-- 실시간 데이터 표시 영역 -->
-                        </tbody>
+                            </tbody>
                     </table>
                 </div>
             </div>
         </div>
     </div>
 
+    <div id="out-list-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-btn">&times;</span>
+            <h2>Out 처리된 플레이어 목록</h2>
+            <ul id="out-player-list">
+                </ul>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
 </html>
-
