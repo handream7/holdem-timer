@@ -19,8 +19,9 @@ let currentGameId = null;
 let timerInterval = null;
 let unsubscribe = null;
 let isSeeking = false;
-let lastPlayedLevelIndex = -1; // 마지막으로 소리를 재생한 레벨 인덱스
-let isSoundOn = true; // 소리 켜짐/꺼짐 상태
+let lastPlayedLevelIndex = -1;
+let isSoundOn = true;
+let oneMinuteAlertPlayed = false; // 1분 알림이 재생되었는지 추적하는 플래그
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -47,8 +48,6 @@ function setupEventListeners() {
     document.getElementById('time-minus-btn').addEventListener('click', () => adjustTime(-10));
     document.getElementById('heads-up-btn').addEventListener('click', setHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
-    
-    // 업데이트 버튼 이벤트 리스너 추가
     document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
 
     const timeSlider = document.getElementById('time-slider');
@@ -72,7 +71,6 @@ async function handleUpdateData() {
         }
         const apiData = await response.json();
 
-        // API 데이터의 키를 우리 코드에서 사용하는 키로 변환
         const formattedData = apiData.map(player => ({
             rank: player['#'],
             name: player['Player'],
@@ -82,7 +80,6 @@ async function handleUpdateData() {
         }));
 
         updateRealtimeDataTable(formattedData);
-        // alert('플레이어 정보가 성공적으로 업데이트되었습니다.'); // 수동 업데이트이므로 성공 알림을 다시 활성화할 수 있습니다.
 
     } catch (error) {
         console.error("외부 데이터 업데이트 실패:", error);
@@ -120,6 +117,13 @@ function updateTimerUI(gameData) {
     const update = () => {
         const schedule = buildSchedule(gameData.settings);
         const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
+        
+        // --- 1분 알림 기능 추가 ---
+        if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
+            playSound('levelup'); // 1분 남았을 때 '레벨업' 사운드 재생
+            oneMinuteAlertPlayed = true;
+        }
+
         if (currentLevelIndex !== lastPlayedLevelIndex) {
             if (lastPlayedLevelIndex !== -1) {
                 const newLevel = schedule[currentLevelIndex];
@@ -130,6 +134,7 @@ function updateTimerUI(gameData) {
                 }
             }
             lastPlayedLevelIndex = currentLevelIndex;
+            oneMinuteAlertPlayed = false; // 새 레벨이 시작되면 1분 알림 플래그 초기화
         }
         displayTime(timeLeftInLevel, document.getElementById('timer-label'));
         displayLevelInfo(schedule, currentLevelIndex);
@@ -161,6 +166,7 @@ function goHome() {
 function joinGame(gameId) {
     showPage('timer-page');
     lastPlayedLevelIndex = -1;
+    oneMinuteAlertPlayed = false; // 게임 진입 시 1분 알림 플래그 초기화
     if (unsubscribe) unsubscribe();
     unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
@@ -170,8 +176,6 @@ function joinGame(gameId) {
             window.location.href = window.location.pathname;
         }
     });
-    // 타이머 페이지 진입 시 자동 업데이트 기능 제거
-    // handleUpdateData(); 
 }
 
 function updateRealtimeDataTable(data) {
@@ -556,7 +560,7 @@ function getDefaultBlinds() {
         { level: 17, small: 4000, big: 8000, ante: 8000, duration: 8 }, { level: 18, small: 5000, big: 10000, ante: 10000, duration: 8 },
         { level: 19, small: 6000, big: 12000, ante: 12000, duration: 8 }, { level: 20, small: 8000, big: 16000, ante: 16000, duration: 8 },
         { level: 21, small: 10000, big: 20000, ante: 20000, duration: 6 }, { level: 22, small: 15000, big: 25000, ante: 25000, duration: 6 },
-        { level: 23, small: 15000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
+        { level: 23, small: 20000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
         { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 }, { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
     ];
 }
