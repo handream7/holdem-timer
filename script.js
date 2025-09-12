@@ -24,7 +24,7 @@ let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
 let oneMinuteAlertPlayed = false;
 let isDataLoaded = false;
-let isLocked = false; // 잠금 상태를 추적하는 변수 추가
+let isLocked = false; 
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -52,7 +52,7 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
-    document.getElementById('lock-btn').addEventListener('click', toggleLock); // 잠금 버튼 이벤트 리스너 추가
+    document.getElementById('lock-btn').addEventListener('click', toggleLock); 
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -73,42 +73,39 @@ function setupEventListeners() {
 }
 
 // ========================================================
-// 여기가 추가된 핵심 부분입니다. (잠금 기능)
+// 여기가 수정된 핵심 부분입니다. (잠금 기능)
 // ========================================================
 function toggleLock() {
-    // 1. 잠금 상태를 반전시킴
     isLocked = !isLocked;
 
-    // 2. 잠금/해제할 버튼들을 모두 가져옴
     const lockButton = document.getElementById('lock-btn');
-    const controlButtons = [
+    // 잠금/해제할 컨트롤 목록에 'time-slider' 추가
+    const controlsToLock = [
         document.getElementById('prev-level-btn'),
         document.getElementById('play-pause-btn'),
         document.getElementById('next-level-btn'),
         document.getElementById('time-minus-btn'),
         document.getElementById('time-plus-btn'),
-        document.getElementById('heads-up-btn')
+        document.getElementById('heads-up-btn'),
+        document.getElementById('time-slider') // 진행바(슬라이더) 추가
     ];
 
-    // 3. 현재 잠금 상태에 따라 UI를 업데이트
     if (isLocked) {
-        // 잠금 상태일 때
-        lockButton.classList.add('locked'); // 잠금 버튼을 파란색으로 변경
-        lockButton.textContent = '잠금 해제'; // 버튼 텍스트 변경
-        controlButtons.forEach(btn => {
-            if (btn) btn.disabled = true; // 모든 제어 버튼 비활성화
+        lockButton.classList.add('locked');
+        lockButton.textContent = '잠금 해제';
+        controlsToLock.forEach(control => {
+            if (control) control.disabled = true; // 목록의 모든 컨트롤 비활성화
         });
     } else {
-        // 잠금 해제 상태일 때
-        lockButton.classList.remove('locked'); // 잠금 버튼 색상 원래대로
-        lockButton.textContent = '잠금'; // 버튼 텍스트 원래대로
-        controlButtons.forEach(btn => {
-            if (btn) btn.disabled = false; // 모든 제어 버튼 활성화
+        lockButton.classList.remove('locked');
+        lockButton.textContent = '잠금';
+        controlsToLock.forEach(control => {
+            if (control) control.disabled = false; // 목록의 모든 컨트롤 활성화
         });
     }
 }
 // ========================================================
-// 추가된 부분 끝
+// 수정된 부분 끝
 // ========================================================
 
 function calculateAndDisplayPrizes(playerData) {
@@ -371,9 +368,11 @@ async function toggleHeadsUp() {
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
     if (!doc.exists) return;
+
     const gameData = doc.data();
     const settings = gameData.settings;
     const isHeadsUpActive = !!gameData.originalDurations;
+
     const schedule = buildSchedule(settings);
     const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
     let currentBlindLevelNumber = 0;
@@ -388,19 +387,23 @@ async function toggleHeadsUp() {
             }
         }
     }
+
     if (isHeadsUpActive) {
         const originalDurations = gameData.originalDurations;
+        
         const restoredBlinds = settings.blinds.map((blind, index) => {
             if (blind.level > currentBlindLevelNumber) {
                 return { ...blind, duration: originalDurations[index] ?? blind.duration };
             }
             return blind;
         });
+
         await gameRef.update({
             'settings.blinds': restoredBlinds,
             originalDurations: firebase.firestore.FieldValue.delete()
         });
         alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
+
     } else {
         const originalDurations = settings.blinds.map(blind => blind.duration);
         const newBlinds = settings.blinds.map(blind => {
@@ -409,6 +412,7 @@ async function toggleHeadsUp() {
             }
             return blind;
         });
+
         await gameRef.update({
             'settings.blinds': newBlinds,
             originalDurations: originalDurations
@@ -433,11 +437,15 @@ function buildSchedule(settings) {
 function updateTimerUI(gameData) {
     if (!gameData) return;
     if (timerInterval) clearInterval(timerInterval);
+    
     const isHeadsUpActive = !!gameData.originalDurations;
     document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
+
     const schedule = buildSchedule(gameData.settings);
+    
     const update = () => {
         const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
+        
         if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
             playSound('levelup');
             oneMinuteAlertPlayed = true;
@@ -456,6 +464,7 @@ function updateTimerUI(gameData) {
         displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
         calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
         calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
+        
         const players = gameData.players || 0;
         const totalPlayers = gameData.totalPlayers || 0;
         document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
