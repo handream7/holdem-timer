@@ -23,7 +23,7 @@ let isSeeking = false;
 let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
 let oneMinuteAlertPlayed = false;
-let isDataLoaded = false; // 데이터 로딩 상태를 추적하는 플래그 변수 추가
+let isDataLoaded = false; 
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -105,11 +105,12 @@ function calculateAndDisplayPrizes(playerData) {
     }
 }
 
+
 // ========================================================
 // 여기가 수정된 핵심 부분입니다.
 // ========================================================
 async function handleUpdateData() {
-    isDataLoaded = false; // 데이터 로딩 시작 시 플래그 초기화
+    isDataLoaded = false; 
     const updateButton = document.getElementById('update-data-btn');
     updateButton.textContent = '로딩 중...';
     updateButton.disabled = true;
@@ -119,9 +120,11 @@ async function handleUpdateData() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const apiData = await response.json();
+
+        // 데이터를 변환할 때 player.player 값의 앞뒤 공백을 제거 (핵심 수정사항)
         const formattedData = apiData.player_status.map(player => ({
             rank: player.number,
-            name: player.player,
+            name: player.player ? player.player.trim() : '', // .trim() 추가
             buyIn: player.buy_in,
             rebuy1: player.rebuy1,
             rebuy2: player.rebuy2
@@ -131,9 +134,8 @@ async function handleUpdateData() {
         updateRealtimeDataTable(formattedData);
         await updateTimerInfoFromPlayerData(formattedData);
 
-        isDataLoaded = true; // 테이블 생성이 완료되었으므로 플래그를 true로 설정
+        isDataLoaded = true; 
 
-        // 초기 X값과 스타일을 정확하게 설정하기 위해 수동으로 한 번 호출
         const outedPlayersSnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').get();
         const outedPlayerNames = outedPlayersSnapshot.docs.map(doc => doc.id);
         updateOutedPlayerUI(outedPlayerNames);
@@ -146,13 +148,16 @@ async function handleUpdateData() {
         updateButton.disabled = false;
     }
 }
+// ========================================================
+// 수정된 부분 끝
+// ========================================================
+
 
 function updateOutedPlayerUI(outedPlayerNames) {
-    // 데이터가 로드되기 전에는 X값 계산 및 UI 업데이트를 실행하지 않음
     if (!isDataLoaded) return;
 
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-    let activePlayers = 0; // X 값 (현재 플레이어 수)
+    let activePlayers = 0; 
 
     allRows.forEach(row => {
         const outButton = row.querySelector('.out-btn');
@@ -164,7 +169,7 @@ function updateOutedPlayerUI(outedPlayerNames) {
             } else {
                 row.style.opacity = '1';
                 outButton.disabled = false;
-                activePlayers++; // Out되지 않은 플레이어만 카운트
+                activePlayers++;
             }
         }
     });
@@ -174,10 +179,6 @@ function updateOutedPlayerUI(outedPlayerNames) {
         gameRef.update({ players: activePlayers });
     }
 }
-// ========================================================
-// 수정된 부분 끝
-// ========================================================
-
 
 function joinGame(gameId) {
     showPage('timer-page');
@@ -233,14 +234,12 @@ function updateRealtimeDataTable(data) {
 
 async function updateTimerInfoFromPlayerData(playersData) {
     if (!currentGameId) return;
-
     let totalEntries = 0;
     playersData.forEach(player => {
         if (player.buyIn) totalEntries++;
         if (player.rebuy1) totalEntries++;
         if (player.rebuy2) totalEntries++;
     });
-
     let buyInCount = 0;
     let rebuy1Count = 0;
     let rebuy2Count = 0;
@@ -253,7 +252,6 @@ async function updateTimerInfoFromPlayerData(playersData) {
     const rebuy1Chips = rebuy1Count * 50000;
     const rebuy2Chips = rebuy2Count * 80000;
     const totalChips = buyInChips + rebuy1Chips + rebuy2Chips;
-
     const gameRef = gamesCollection.doc(currentGameId);
     await gameRef.update({
         totalPlayers: totalEntries,
