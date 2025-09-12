@@ -48,7 +48,7 @@ function setupEventListeners() {
     document.getElementById('go-home-btn').addEventListener('click', goHome);
     document.getElementById('time-minus-btn').addEventListener('click', () => adjustTime(10));
     document.getElementById('time-plus-btn').addEventListener('click', () => adjustTime(-10));
-    document.getElementById('heads-up-btn').addEventListener('click', setHeadsUp);
+    document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
 
@@ -105,10 +105,6 @@ function calculateAndDisplayPrizes(playerData) {
     }
 }
 
-
-// ========================================================
-// 여기가 수정된 핵심 부분입니다.
-// ========================================================
 async function handleUpdateData() {
     isDataLoaded = false; 
     const updateButton = document.getElementById('update-data-btn');
@@ -120,11 +116,9 @@ async function handleUpdateData() {
         if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
         
         const apiData = await response.json();
-
-        // 데이터를 변환할 때 player.player 값의 앞뒤 공백을 제거 (핵심 수정사항)
         const formattedData = apiData.player_status.map(player => ({
             rank: player.number,
-            name: player.player ? player.player.trim() : '', // .trim() 추가
+            name: player.player ? player.player.trim() : '',
             buyIn: player.buy_in,
             rebuy1: player.rebuy1,
             rebuy2: player.rebuy2
@@ -148,17 +142,11 @@ async function handleUpdateData() {
         updateButton.disabled = false;
     }
 }
-// ========================================================
-// 수정된 부분 끝
-// ========================================================
-
 
 function updateOutedPlayerUI(outedPlayerNames) {
     if (!isDataLoaded) return;
-
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
     let activePlayers = 0; 
-
     allRows.forEach(row => {
         const outButton = row.querySelector('.out-btn');
         if (outButton) {
@@ -173,23 +161,18 @@ function updateOutedPlayerUI(outedPlayerNames) {
             }
         }
     });
-
     if (currentGameId) {
-        const gameRef = gamesCollection.doc(currentGameId);
-        gameRef.update({ players: activePlayers });
+        gamesCollection.doc(currentGameId).update({ players: activePlayers });
     }
 }
 
 function joinGame(gameId) {
     showPage('timer-page');
     handleUpdateData();
-    
     lastPlayedLevelIndex = -1;
     oneMinuteAlertPlayed = false;
-    
     if (unsubscribe) unsubscribe();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
-
     unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
             updateTimerUI(doc.data());
@@ -198,7 +181,6 @@ function joinGame(gameId) {
             goHome();
         }
     });
-
     unsubscribeOutedPlayers = gamesCollection.doc(gameId).collection('outedPlayers')
         .onSnapshot(snapshot => {
             const outedPlayerNames = snapshot.docs.map(doc => doc.id);
@@ -223,7 +205,6 @@ function updateRealtimeDataTable(data) {
             <td><button class="out-btn" data-player-name="${player.name}">Out</button></td>
         `;
         tableBody.appendChild(row);
-
         const outButton = row.querySelector('.out-btn');
         if (outButton) {
             outButton.addEventListener('click', handleOutButtonClick);
@@ -266,8 +247,7 @@ async function handleOutButtonClick(event) {
     if (!playerName || !currentGameId) return;
     if (confirm(`'${playerName}'님을 Out 처리하시겠습니까?`)) {
         try {
-            const outedPlayerRef = gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName);
-            await outedPlayerRef.set({ outTime: firebase.firestore.FieldValue.serverTimestamp() });
+            await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).set({ outTime: firebase.firestore.FieldValue.serverTimestamp() });
         } catch (error) {
             console.error("Out 처리 중 오류 발생:", error);
             alert("플레이어 Out 처리 중 오류가 발생했습니다.");
@@ -307,9 +287,7 @@ function toggleSound() {
     const breakSound = document.getElementById('break-sound');
     if (isSoundOn) {
         if (levelupSound && levelupSound.paused) {
-            levelupSound.play().then(() => levelupSound.pause()).catch(e => {
-                console.error("소리 활성화 실패: 페이지와 상호작용이 더 필요할 수 있습니다.", e);
-            });
+            levelupSound.play().then(() => levelupSound.pause()).catch(e => console.error("소리 활성화 실패:", e));
         }
     } else {
         if (levelupSound) {
@@ -325,36 +303,128 @@ function toggleSound() {
 
 function playSound(type) {
     if (!isSoundOn) return;
-    const sound = (type === 'break') 
-        ? document.getElementById('break-sound')
-        : document.getElementById('levelup-sound');
+    const sound = (type === 'break') ? document.getElementById('break-sound') : document.getElementById('levelup-sound');
     if (sound) {
         sound.currentTime = 0;
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
     }
 }
 
+// ========================================================
+// 여기가 수정된 핵심 부분입니다. (HEADS-UP 관련)
+// ========================================================
+
+async function createNewGame() {
+    const settings = captureSettings();
+    try {
+        const docRef = await gamesCollection.add({
+            settings: settings,
+            startTime: firebase.firestore.FieldValue.serverTimestamp(),
+            isPaused: false
+        });
+        window.location.href = `?game=${docRef.id}`;
+    } catch (error) {
+        console.error("Error creating new game: ", error);
+        alert("게임을 생성하는 데 실패했습니다.");
+    }
+}
+
+async function toggleHeadsUp() {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+
+    const gameData = doc.data();
+    const settings = gameData.settings;
+    const isHeadsUpActive = !!gameData.originalDurations;
+
+    // ON/OFF 로직 모두에서 현재 레벨을 알아야 함
+    const schedule = buildSchedule(settings);
+    const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
+    let currentBlindLevelNumber = 0;
+    const currentLevelInfo = schedule[currentLevelIndex];
+    if (currentLevelInfo && !currentLevelInfo.isBreak) {
+        currentBlindLevelNumber = currentLevelInfo.level;
+    } else {
+        for (let i = currentLevelIndex; i >= 0; i--) {
+            if (schedule[i] && !schedule[i].isBreak) {
+                currentBlindLevelNumber = schedule[i].level;
+                break;
+            }
+        }
+    }
+
+    if (isHeadsUpActive) {
+        // --- 헤즈업 모드 끄기 ---
+        const originalDurations = gameData.originalDurations;
+        
+        // 다음 레벨부터만 원래 시간으로 복원
+        const restoredBlinds = settings.blinds.map((blind, index) => {
+            if (blind.level > currentBlindLevelNumber) {
+                return { ...blind, duration: originalDurations[index] ?? blind.duration };
+            }
+            return blind; // 현재와 이전 레벨은 그대로 둠
+        });
+
+        await gameRef.update({
+            'settings.blinds': restoredBlinds,
+            originalDurations: firebase.firestore.FieldValue.delete()
+        });
+        alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
+
+    } else {
+        // --- 헤즈업 모드 켜기 ---
+        const originalDurations = settings.blinds.map(blind => blind.duration);
+        const newBlinds = settings.blinds.map(blind => {
+            if (blind.level > currentBlindLevelNumber) {
+                return { ...blind, duration: 5 };
+            }
+            return blind;
+        });
+
+        await gameRef.update({
+            'settings.blinds': newBlinds,
+            originalDurations: originalDurations
+        });
+        alert('헤즈업 모드가 설정되었습니다. 다음 레벨부터 5분으로 적용됩니다.');
+    }
+}
+
+function buildSchedule(settings) {
+    const schedule = [];
+    if (settings && settings.blinds) {
+        settings.blinds.forEach(level => {
+            schedule.push({ ...level, isBreak: false });
+            if (settings.breakLevels?.includes(level.level)) {
+                schedule.push({ isBreak: true, duration: settings.breakDuration, level: 'Break', small: 0, big: 0, ante: 0 });
+            }
+        });
+    }
+    return schedule;
+}
+
 function updateTimerUI(gameData) {
     if (!gameData) return;
     if (timerInterval) clearInterval(timerInterval);
     
+    const isHeadsUpActive = !!gameData.originalDurations;
+    document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
+
+    const schedule = buildSchedule(gameData.settings);
+    
     const update = () => {
-        const schedule = buildSchedule(gameData.settings);
         const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
         
         if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
             playSound('levelup');
             oneMinuteAlertPlayed = true;
         }
-
         if (currentLevelIndex !== lastPlayedLevelIndex) {
             if (lastPlayedLevelIndex !== -1) {
                 const newLevel = schedule[currentLevelIndex];
-                if (newLevel.isBreak) {
-                    playSound('break');
-                } else {
-                    playSound('levelup');
-                }
+                if (newLevel?.isBreak) playSound('break');
+                else playSound('levelup');
             }
             lastPlayedLevelIndex = currentLevelIndex;
             oneMinuteAlertPlayed = false;
@@ -364,12 +434,13 @@ function updateTimerUI(gameData) {
         displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
         calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
         calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
+        
         const players = gameData.players || 0;
         const totalPlayers = gameData.totalPlayers || 0;
         document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
         document.getElementById('play-pause-btn').textContent = gameData.isPaused ? '>' : '||';
         if (!isSeeking) {
-            const currentLevelDuration = schedule[currentLevelIndex].duration * 60;
+            const currentLevelDuration = schedule[currentLevelIndex]?.duration * 60 || 0;
             const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
             document.getElementById('time-slider').value = progress;
         }
@@ -379,6 +450,9 @@ function updateTimerUI(gameData) {
        timerInterval = setInterval(update, 1000);
     }
 }
+// ========================================================
+// 수정된 부분 끝
+// ========================================================
 
 async function showOutListModal() {
     if (!currentGameId) return;
@@ -386,7 +460,6 @@ async function showOutListModal() {
     const modal = document.getElementById('out-list-modal');
     listElement.innerHTML = '<li>목록을 불러오는 중...</li>';
     modal.style.display = 'flex';
-
     try {
         const querySnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').orderBy('outTime', 'desc').get();
         listElement.innerHTML = '';
@@ -449,21 +522,6 @@ function showPage(pageId) {
     document.getElementById(pageId).style.display = 'block';
 }
 
-async function createNewGame() {
-    const settings = captureSettings();
-    try {
-        const docRef = await gamesCollection.add({
-            settings: settings,
-            startTime: firebase.firestore.FieldValue.serverTimestamp(),
-            isPaused: false,
-        });
-        window.location.href = `?game=${docRef.id}`;
-    } catch (error) {
-        console.error("Error creating new game: ", error);
-        alert("게임을 생성하는 데 실패했습니다.");
-    }
-}
-
 function calculateCurrentState(gameData, schedule) {
     if (gameData.isPaused) {
         const elapsedSeconds = gameData.elapsedSecondsOnPause || 0;
@@ -471,35 +529,32 @@ function calculateCurrentState(gameData, schedule) {
         let currentLevelIndex = 0;
         for (let i = 0; i < schedule.length; i++) {
             const levelDuration = schedule[i].duration * 60;
-            if (elapsedSeconds < cumulativeSeconds + levelDuration) {
+            if (elapsedSeconds < cumulativeSeconds + levelDuration || i === schedule.length - 1) {
                 currentLevelIndex = i;
                 break;
             }
             cumulativeSeconds += levelDuration;
-            if (i === schedule.length - 1) currentLevelIndex = i;
         }
         const timeIntoLevel = elapsedSeconds - cumulativeSeconds;
-        const timeLeftInLevel = (schedule[currentLevelIndex].duration * 60) - timeIntoLevel;
+        const timeLeftInLevel = (schedule[currentLevelIndex]?.duration * 60 || 0) - timeIntoLevel;
         return { currentLevelIndex, timeLeftInLevel, elapsedSeconds, cumulativeSeconds };
     } else {
         const now = Date.now();
         const startTime = gameData.startTime ? gameData.startTime.toMillis() : now;
         let elapsedSeconds = Math.floor((now - startTime) / 1000);
         if (elapsedSeconds < 0) elapsedSeconds = 0;
-
         let cumulativeSeconds = 0;
         let currentLevelIndex = 0;
         for (let i = 0; i < schedule.length; i++) {
             const levelDuration = schedule[i].duration * 60;
-            if (elapsedSeconds < cumulativeSeconds + levelDuration) {
+            if (elapsedSeconds < cumulativeSeconds + levelDuration || i === schedule.length - 1) {
                 currentLevelIndex = i;
                 break;
             }
             cumulativeSeconds += levelDuration;
-            if (i === schedule.length - 1) currentLevelIndex = i;
         }
         const timeIntoLevel = elapsedSeconds - cumulativeSeconds;
-        const timeLeftInLevel = (schedule[currentLevelIndex].duration * 60) - timeIntoLevel;
+        const timeLeftInLevel = (schedule[currentLevelIndex]?.duration * 60 || 0) - timeIntoLevel;
         return { currentLevelIndex, timeLeftInLevel, elapsedSeconds, cumulativeSeconds };
     }
 }
@@ -519,6 +574,7 @@ function displayTime(seconds, element, withHours = false) {
 function displayLevelInfo(schedule, index) {
     const currentLevel = schedule[index];
     const nextLevel = schedule[index + 1];
+    if (!currentLevel) return;
     if (currentLevel.isBreak) {
         document.getElementById('level-label').textContent = "BREAK";
         document.getElementById('blinds-label').textContent = "휴식 시간입니다";
@@ -541,7 +597,9 @@ function calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex) {
     const players = gameData.players || 0;
     const totalChips = gameData.totalChips || 0;
     const avrStack = players > 0 ? Math.ceil(totalChips / players) : 0;
-    const currentBigBlind = schedule[currentLevelIndex].isBreak ? (schedule[currentLevelIndex - 1]?.big || 1) : (schedule[currentLevelIndex].big || 1);
+    const currentLevel = schedule[currentLevelIndex];
+    if (!currentLevel) return;
+    const currentBigBlind = currentLevel.isBreak ? (schedule[currentLevelIndex - 1]?.big || 1) : (currentLevel.big || 1);
     document.getElementById('total-chips-info').textContent = totalChips.toLocaleString();
     document.getElementById('avr-stack-info').textContent = avrStack.toLocaleString();
     document.getElementById('total-chips-bb-info').textContent = `(${(totalChips / currentBigBlind).toFixed(1)} BB)`;
@@ -556,7 +614,7 @@ function calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelInde
     for (let i = 0; i < currentLevelIndex; i++) {
         cumulativeTimeAtCurrentLevel += schedule[i].duration * 60;
     }
-    const timeRemainingInCurrentLevel = (cumulativeTimeAtCurrentLevel + schedule[currentLevelIndex].duration * 60) - elapsedSeconds;
+    const timeRemainingInCurrentLevel = (cumulativeTimeAtCurrentLevel + (schedule[currentLevelIndex]?.duration * 60 || 0)) - elapsedSeconds;
     timeToBreak += timeRemainingInCurrentLevel;
     for (let i = currentLevelIndex + 1; i < schedule.length; i++) {
         if (schedule[i].isBreak) {
@@ -579,14 +637,11 @@ async function togglePlayPause() {
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
     if (!doc.exists) return;
-
     const gameData = doc.data();
     const schedule = buildSchedule(gameData.settings);
-
     if (gameData.isPaused) {
         const elapsedSecondsOnPause = gameData.elapsedSecondsOnPause || 0;
         const newStartTimeMillis = Date.now() - (elapsedSecondsOnPause * 1000);
-        
         await gameRef.update({
             isPaused: false,
             startTime: firebase.firestore.Timestamp.fromMillis(newStartTimeMillis),
@@ -605,21 +660,15 @@ async function changeLevel(direction) {
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
     if (!doc.exists) return;
-
     const gameData = doc.data();
     const schedule = buildSchedule(gameData.settings);
     const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
-    
     let targetLevelIndex = currentLevelIndex + direction;
-    if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) {
-        return;
-    }
-
+    if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) return;
     let targetCumulativeSeconds = 0;
     for (let i = 0; i < targetLevelIndex; i++) {
         targetCumulativeSeconds += schedule[i].duration * 60;
     }
-
     if (gameData.isPaused) {
         await gameRef.update({ elapsedSecondsOnPause: targetCumulativeSeconds });
     } else {
@@ -635,7 +684,6 @@ async function adjustTime(seconds) {
     const doc = await gameRef.get();
     if (!doc.exists) return;
     const gameData = doc.data();
-
     if (gameData.isPaused) {
         const newElapsedSeconds = (gameData.elapsedSecondsOnPause || 0) - seconds;
         await gameRef.update({ elapsedSecondsOnPause: newElapsedSeconds < 0 ? 0 : newElapsedSeconds });
@@ -645,40 +693,6 @@ async function adjustTime(seconds) {
             startTime: firebase.firestore.Timestamp.fromMillis(newStartTimeMillis)
         });
     }
-}
-async function setHeadsUp() {
-    if (!currentGameId) return;
-    const gameRef = gamesCollection.doc(currentGameId);
-    const doc = await gameRef.get();
-    if (!doc.exists) return;
-
-    const gameData = doc.data();
-    const settings = gameData.settings;
-    const schedule = buildSchedule(settings);
-    const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
-
-    let currentBlindLevelNumber = 0;
-    if (schedule[currentLevelIndex] && !schedule[currentLevelIndex].isBreak) {
-        currentBlindLevelNumber = schedule[currentLevelIndex].level;
-    } else {
-        for (let i = currentLevelIndex; i >= 0; i--) {
-            if (schedule[i] && !schedule[i].isBreak) {
-                currentBlindLevelNumber = schedule[i].level;
-                break;
-            }
-        }
-    }
-
-    const newBlinds = settings.blinds.map(blind => {
-        if (blind.level > currentBlindLevelNumber) {
-            return { ...blind, duration: 5 };
-        }
-        return blind;
-    });
-
-    const newSettings = { ...settings, blinds: newBlinds };
-    await gameRef.update({ settings: newSettings });
-    alert('헤즈업 모드가 설정되었습니다. 다음 레벨부터 5분으로 적용됩니다.');
 }
 async function seekTime(value, finalUpdate) {
     if (!currentGameId) return;
@@ -691,10 +705,8 @@ async function seekTime(value, finalUpdate) {
     const levelDuration = schedule[currentLevelIndex].duration * 60;
     const timeIntoLevel = levelDuration > 0 ? levelDuration * value : 0;
     const targetElapsedSeconds = cumulativeSeconds + timeIntoLevel;
-    
     const timeLeft = levelDuration - timeIntoLevel;
     displayTime(timeLeft, document.getElementById('timer-label'));
-
     if (finalUpdate) {
         if (gameData.isPaused) {
             await gameRef.update({ elapsedSecondsOnPause: targetElapsedSeconds });
@@ -762,18 +774,6 @@ function captureSettings() {
         breakLevels: document.getElementById('break-levels').value.split(',').map(n => parseInt(n.trim())).filter(Number.isFinite),
         breakDuration: parseInt(document.getElementById('break-duration').value)
     };
-}
-function buildSchedule(settings) {
-    const schedule = [];
-    if (settings && settings.blinds) {
-        settings.blinds.forEach(level => {
-            schedule.push({ ...level, isBreak: false });
-            if (settings.breakLevels && settings.breakLevels.includes(level.level)) {
-                schedule.push({ isBreak: true, duration: settings.breakDuration, level: 'Break', small: 0, big: 0, ante: 0 });
-            }
-        });
-    }
-    return schedule;
 }
 function getDefaultBlinds() {
     return [
