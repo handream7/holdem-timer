@@ -255,6 +255,13 @@ h1, h2 {
     font-size: 1.5rem;
 }
 
+/* 비활성화된 컨트롤 버튼 스타일 추가 */
+.controls-area button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #333;
+}
+
 /* 하단 영역 상세 스타일 */
 .bottom-controls {
     display: flex;
@@ -263,7 +270,8 @@ h1, h2 {
     justify-content: flex-start;
 }
 
-#go-home-btn, #sound-toggle-btn, #update-data-btn, #out-list-btn { /* out-list-btn 스타일 추가 */
+/* 잠금 버튼 ID 추가 */
+#go-home-btn, #sound-toggle-btn, #update-data-btn, #out-list-btn, #lock-btn { 
     padding: 6px 12px;
     font-size: 0.8rem;
     background-color: #444;
@@ -271,6 +279,12 @@ h1, h2 {
     border: 1px solid #555;
     border-radius: 5px;
     cursor: pointer;
+}
+
+/* 활성화된 잠금 버튼 스타일 추가 */
+#lock-btn.locked {
+    background-color: #0056b3;
+    border-color: #007bff;
 }
 
 .table-container {
@@ -291,11 +305,9 @@ h1, h2 {
     color: #aaa;
     font-size: 0.9rem;
 }
-/* Out 처리된 행에 대한 커서 스타일 추가 */
 #realtime-data-tbody tr[style*="opacity: 0.5"] {
     cursor: pointer;
 }
-
 .out-btn {
     padding: 4px 8px;
     font-size: 0.8rem;
@@ -311,7 +323,7 @@ h1, h2 {
     cursor: not-allowed;
 }
 
-/* --- 모달(팝업) 스타일 (수정됨) --- */
+/* --- 모달(팝업) 스타일 --- */
 .modal {
     display: none; 
     position: fixed; 
@@ -321,24 +333,21 @@ h1, h2 {
     width: 100%;
     height: 100%;
     background-color: rgba(0,0,0,0.7);
-    /* flex를 이용해 내부 콘텐츠를 중앙 정렬 */
-    display: none; /* JS에서 flex로 변경할 예정 */
+    display: none; 
     justify-content: center;
     align-items: center;
 }
-
 .modal-content {
     background-color: #2d2d2d;
     padding: 25px;
     border: 1px solid #555;
-    width: 90%; /* 화면이 좁을 때를 대비 */
+    width: 90%;
     max-width: 450px;
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.6);
     position: relative;
-    margin: 0; /* 기존 margin 제거 */
+    margin: 0;
 }
-
 .close-btn {
     color: #aaa;
     position: absolute;
@@ -348,13 +357,11 @@ h1, h2 {
     font-weight: bold;
     cursor: pointer;
 }
-
 .close-btn:hover,
 .close-btn:focus {
     color: #fff;
     text-decoration: none;
 }
-
 #out-player-list {
     list-style: none;
     padding: 0;
@@ -362,7 +369,6 @@ h1, h2 {
     max-height: 50vh;
     overflow-y: auto;
 }
-
 #out-player-list li {
     background-color: #444;
     padding: 10px;

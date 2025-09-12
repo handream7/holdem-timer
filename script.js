@@ -23,7 +23,8 @@ let isSeeking = false;
 let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
 let oneMinuteAlertPlayed = false;
-let isDataLoaded = false; 
+let isDataLoaded = false;
+let isLocked = false; // 잠금 상태를 추적하는 변수 추가
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,6 +52,7 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
+    document.getElementById('lock-btn').addEventListener('click', toggleLock); // 잠금 버튼 이벤트 리스너 추가
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -69,6 +71,45 @@ function setupEventListeners() {
     timeSlider.addEventListener('mouseup', () => { if (isSeeking) isSeeking = false; });
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 }
+
+// ========================================================
+// 여기가 추가된 핵심 부분입니다. (잠금 기능)
+// ========================================================
+function toggleLock() {
+    // 1. 잠금 상태를 반전시킴
+    isLocked = !isLocked;
+
+    // 2. 잠금/해제할 버튼들을 모두 가져옴
+    const lockButton = document.getElementById('lock-btn');
+    const controlButtons = [
+        document.getElementById('prev-level-btn'),
+        document.getElementById('play-pause-btn'),
+        document.getElementById('next-level-btn'),
+        document.getElementById('time-minus-btn'),
+        document.getElementById('time-plus-btn'),
+        document.getElementById('heads-up-btn')
+    ];
+
+    // 3. 현재 잠금 상태에 따라 UI를 업데이트
+    if (isLocked) {
+        // 잠금 상태일 때
+        lockButton.classList.add('locked'); // 잠금 버튼을 파란색으로 변경
+        lockButton.textContent = '잠금 해제'; // 버튼 텍스트 변경
+        controlButtons.forEach(btn => {
+            if (btn) btn.disabled = true; // 모든 제어 버튼 비활성화
+        });
+    } else {
+        // 잠금 해제 상태일 때
+        lockButton.classList.remove('locked'); // 잠금 버튼 색상 원래대로
+        lockButton.textContent = '잠금'; // 버튼 텍스트 원래대로
+        controlButtons.forEach(btn => {
+            if (btn) btn.disabled = false; // 모든 제어 버튼 활성화
+        });
+    }
+}
+// ========================================================
+// 추가된 부분 끝
+// ========================================================
 
 function calculateAndDisplayPrizes(playerData) {
     let totalBuyIns = 0;
@@ -310,10 +351,6 @@ function playSound(type) {
     }
 }
 
-// ========================================================
-// 여기가 수정된 핵심 부분입니다. (HEADS-UP 관련)
-// ========================================================
-
 async function createNewGame() {
     const settings = captureSettings();
     try {
@@ -334,12 +371,9 @@ async function toggleHeadsUp() {
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
     if (!doc.exists) return;
-
     const gameData = doc.data();
     const settings = gameData.settings;
     const isHeadsUpActive = !!gameData.originalDurations;
-
-    // ON/OFF 로직 모두에서 현재 레벨을 알아야 함
     const schedule = buildSchedule(settings);
     const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
     let currentBlindLevelNumber = 0;
@@ -354,27 +388,20 @@ async function toggleHeadsUp() {
             }
         }
     }
-
     if (isHeadsUpActive) {
-        // --- 헤즈업 모드 끄기 ---
         const originalDurations = gameData.originalDurations;
-        
-        // 다음 레벨부터만 원래 시간으로 복원
         const restoredBlinds = settings.blinds.map((blind, index) => {
             if (blind.level > currentBlindLevelNumber) {
                 return { ...blind, duration: originalDurations[index] ?? blind.duration };
             }
-            return blind; // 현재와 이전 레벨은 그대로 둠
+            return blind;
         });
-
         await gameRef.update({
             'settings.blinds': restoredBlinds,
             originalDurations: firebase.firestore.FieldValue.delete()
         });
         alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
-
     } else {
-        // --- 헤즈업 모드 켜기 ---
         const originalDurations = settings.blinds.map(blind => blind.duration);
         const newBlinds = settings.blinds.map(blind => {
             if (blind.level > currentBlindLevelNumber) {
@@ -382,7 +409,6 @@ async function toggleHeadsUp() {
             }
             return blind;
         });
-
         await gameRef.update({
             'settings.blinds': newBlinds,
             originalDurations: originalDurations
@@ -407,15 +433,11 @@ function buildSchedule(settings) {
 function updateTimerUI(gameData) {
     if (!gameData) return;
     if (timerInterval) clearInterval(timerInterval);
-    
     const isHeadsUpActive = !!gameData.originalDurations;
     document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
-
     const schedule = buildSchedule(gameData.settings);
-    
     const update = () => {
         const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
-        
         if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
             playSound('levelup');
             oneMinuteAlertPlayed = true;
@@ -434,7 +456,6 @@ function updateTimerUI(gameData) {
         displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
         calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
         calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
-        
         const players = gameData.players || 0;
         const totalPlayers = gameData.totalPlayers || 0;
         document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
@@ -450,9 +471,6 @@ function updateTimerUI(gameData) {
        timerInterval = setInterval(update, 1000);
     }
 }
-// ========================================================
-// 수정된 부분 끝
-// ========================================================
 
 async function showOutListModal() {
     if (!currentGameId) return;
