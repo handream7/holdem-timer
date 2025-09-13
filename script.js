@@ -24,7 +24,7 @@ let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
 let oneMinuteAlertPlayed = false;
 let isDataLoaded = false;
-let isLocked = false; 
+// isLocked 변수는 이제 Firestore에서 관리하므로 전역 변수에서 제거합니다.
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -73,13 +73,28 @@ function setupEventListeners() {
 }
 
 // ========================================================
-// 여기가 수정된 핵심 부분입니다. (잠금 기능)
+// 여기가 수정된 핵심 부분입니다. (잠금 기능 동기화)
 // ========================================================
-function toggleLock() {
-    isLocked = !isLocked;
 
+// 잠금 상태를 Firestore에 업데이트하는 함수
+async function toggleLock() {
+    if (!currentGameId) return;
+    const gameRef = gamesCollection.doc(currentGameId);
+    try {
+        const doc = await gameRef.get();
+        if (doc.exists) {
+            const currentLockState = doc.data().isLocked || false;
+            // Firestore의 isLocked 필드를 현재 상태의 반대 값으로 업데이트
+            await gameRef.update({ isLocked: !currentLockState });
+        }
+    } catch (error) {
+        console.error("잠금 상태 업데이트 실패:", error);
+    }
+}
+
+// UI 업데이트 함수에서 잠금 상태를 실시간으로 반영
+function updateLockUI(isLocked) {
     const lockButton = document.getElementById('lock-btn');
-    // 잠금/해제할 컨트롤 목록에 'time-slider' 추가
     const controlsToLock = [
         document.getElementById('prev-level-btn'),
         document.getElementById('play-pause-btn'),
@@ -87,26 +102,28 @@ function toggleLock() {
         document.getElementById('time-minus-btn'),
         document.getElementById('time-plus-btn'),
         document.getElementById('heads-up-btn'),
-        document.getElementById('time-slider') // 진행바(슬라이더) 추가
+        document.getElementById('time-slider')
     ];
 
     if (isLocked) {
         lockButton.classList.add('locked');
         lockButton.textContent = '잠금 해제';
         controlsToLock.forEach(control => {
-            if (control) control.disabled = true; // 목록의 모든 컨트롤 비활성화
+            if (control) control.disabled = true;
         });
     } else {
         lockButton.classList.remove('locked');
         lockButton.textContent = '잠금';
         controlsToLock.forEach(control => {
-            if (control) control.disabled = false; // 목록의 모든 컨트롤 활성화
+            if (control) control.disabled = false;
         });
     }
 }
+
 // ========================================================
 // 수정된 부분 끝
 // ========================================================
+
 
 function calculateAndDisplayPrizes(playerData) {
     let totalBuyIns = 0;
@@ -354,7 +371,8 @@ async function createNewGame() {
         const docRef = await gamesCollection.add({
             settings: settings,
             startTime: firebase.firestore.FieldValue.serverTimestamp(),
-            isPaused: false
+            isPaused: false,
+            isLocked: false // 새 게임 생성 시 isLocked 필드 추가
         });
         window.location.href = `?game=${docRef.id}`;
     } catch (error) {
@@ -438,6 +456,9 @@ function updateTimerUI(gameData) {
     if (!gameData) return;
     if (timerInterval) clearInterval(timerInterval);
     
+    // isLocked 상태를 Firestore 데이터로부터 직접 읽어 UI에 반영
+    updateLockUI(gameData.isLocked || false);
+
     const isHeadsUpActive = !!gameData.originalDurations;
     document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
 
