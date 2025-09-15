@@ -1,4 +1,4 @@
-// Your web app's Firebase configuration
+// Your web app's Firebase configuration (기존 타이머 앱)
 const firebaseConfig = {
     apiKey: "AIzaSyABiutWTHs7ZQntghKODX8UDxo1z-DrfUE",
     authDomain: "holdemtimer-7087b.firebaseapp.com",
@@ -9,22 +9,45 @@ const firebaseConfig = {
     measurementId: "G-YX3PE5CYQK"
 };
 
+// --- 💡 수정된 부분 시작 💡 ---
+
+// 1. '게임정산표'의 Firebase 구성 정보 추가
+const settlementFirebaseConfig = {
+    apiKey: "AIzaSyDxwPHSfIlcCii9RLBG9vhwQj2mhjzj3B8",
+    authDomain: "holdemresult-8e89d.firebaseapp.com",
+    projectId: "holdemresult-8e89d",
+    storageBucket: "holdemresult-8e89d.appspot.com",
+    messagingSenderId: "73783503951",
+    appId: "1:73783503951:web:c0d504d039a163f459ce3a",
+    measurementId: "G-EQ5F9VXQWV"
+};
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
+
+// 2. 'settlementApp'이라는 이름으로 보조 Firebase 앱 초기화
+const settlementApp = firebase.initializeApp(settlementFirebaseConfig, 'settlementApp');
+const settlementDb = firebase.firestore(settlementApp); // 보조 앱의 Firestore 인스턴스 가져오기
+
+// 3. '정산표' 데이터가 저장되는 경로를 보조 앱의 DB로 명확히 지정
+const settlementDataRef = settlementDb.collection('gameStates').doc('latestState');
+
+// --- 💡 수정된 부분 끝 💡 ---
+
+
 const gamesCollection = db.collection('games');
 
 // 전역 변수
 let currentGameId = null;
-let timerInterval = null;
-let unsubscribe = null;
-let unsubscribeOutedPlayers = null; 
+let timerTimeout = null;
+let unsubscribeTimer = null;
+let unsubscribeOutedPlayers = null;
+let unsubscribeSettlement = null;
 let isSeeking = false;
 let lastPlayedLevelIndex = -1;
 let isSoundOn = true;
 let oneMinuteAlertPlayed = false;
-let isDataLoaded = false;
-// isLocked 변수는 이제 Firestore에서 관리하므로 전역 변수에서 제거합니다.
 
 // 페이지 로드 시 실행
 document.addEventListener('DOMContentLoaded', () => {
@@ -51,8 +74,12 @@ function setupEventListeners() {
     document.getElementById('time-plus-btn').addEventListener('click', () => adjustTime(-10));
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
-    document.getElementById('update-data-btn').addEventListener('click', handleUpdateData);
     document.getElementById('lock-btn').addEventListener('click', toggleLock); 
+    
+    // '업데이트' 버튼은 이제 자동화되었으므로, 클릭 이벤트를 비워두거나 버튼을 HTML에서 삭제해도 좋습니다.
+    document.getElementById('update-data-btn').addEventListener('click', () => {
+        alert("플레이어 정보는 이제 자동으로 업데이트됩니다.");
+    });
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -72,67 +99,143 @@ function setupEventListeners() {
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 }
 
-// ========================================================
-// 여기가 수정된 핵심 부분입니다. (잠금 기능 동기화)
-// ========================================================
+// 모든 실시간 리스너를 설정하고 관리하는 중앙 함수
+function joinGame(gameId) {
+    showPage('timer-page');
+    lastPlayedLevelIndex = -1;
+    oneMinuteAlertPlayed = false;
 
-// 잠금 상태를 Firestore에 업데이트하는 함수
-async function toggleLock() {
-    if (!currentGameId) return;
-    const gameRef = gamesCollection.doc(currentGameId);
-    try {
-        const doc = await gameRef.get();
+    if (unsubscribeTimer) unsubscribeTimer();
+    if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
+    if (unsubscribeSettlement) unsubscribeSettlement();
+
+    // 1. 타이머 데이터 리스너 (시간, 레벨, 잠금, 헤즈업 등 상태 관리)
+    unsubscribeTimer = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
-            const currentLockState = doc.data().isLocked || false;
-            // Firestore의 isLocked 필드를 현재 상태의 반대 값으로 업데이트
-            await gameRef.update({ isLocked: !currentLockState });
+            updateTimerUI(doc.data());
+        } else {
+            alert("존재하지 않는 게임입니다.");
+            goHome();
         }
-    } catch (error) {
-        console.error("잠금 상태 업데이트 실패:", error);
-    }
-}
-
-// UI 업데이트 함수에서 잠금 상태를 실시간으로 반영
-function updateLockUI(isLocked) {
-    const lockButton = document.getElementById('lock-btn');
-    const controlsToLock = [
-        document.getElementById('prev-level-btn'),
-        document.getElementById('play-pause-btn'),
-        document.getElementById('next-level-btn'),
-        document.getElementById('time-minus-btn'),
-        document.getElementById('time-plus-btn'),
-        document.getElementById('heads-up-btn'),
-        document.getElementById('time-slider')
-    ];
-
-    if (isLocked) {
-        lockButton.classList.add('locked');
-        lockButton.textContent = '잠금 해제';
-        controlsToLock.forEach(control => {
-            if (control) control.disabled = true;
-        });
-    } else {
-        lockButton.classList.remove('locked');
-        lockButton.textContent = '잠금';
-        controlsToLock.forEach(control => {
-            if (control) control.disabled = false;
-        });
-    }
-}
-
-// ========================================================
-// 수정된 부분 끝
-// ========================================================
-
-
-function calculateAndDisplayPrizes(playerData) {
-    let totalBuyIns = 0;
-    const totalPlayers = playerData.length;
-    playerData.forEach(player => {
-        if (player.buyIn) totalBuyIns++;
-        if (player.rebuy1) totalBuyIns++;
-        if (player.rebuy2) totalBuyIns++;
     });
+
+    // 2. Out 플레이어 데이터 리스너
+    unsubscribeOutedPlayers = gamesCollection.doc(gameId).collection('outedPlayers').onSnapshot(snapshot => {
+        const outedPlayerNames = snapshot.docs.map(doc => doc.id);
+        updateOutedPlayerUI(outedPlayerNames);
+    });
+        
+    // --- 💡 수정된 부분 💡 ---
+    // 3. '정산표' 데이터 리스너 (보조 앱의 DB를 바라보도록 설정)
+    unsubscribeSettlement = settlementDataRef.onSnapshot(doc => {
+        console.log("정산표 데이터 변경 감지!");
+        if (doc.exists) {
+            const settlementData = doc.data();
+            // '게임정산표'의 데이터 구조에 맞게 플레이어 정보를 포맷팅
+            const formattedData = (settlementData.players || []).map(player => ({
+                name: player.name,
+                entries: (player.entries || []).map(entryType => {
+                    // '입금' 또는 '포인트'와 같은 텍스트를 그대로 사용
+                    return entryType;
+                })
+            }));
+            
+            updatePlayerDependentInfo(formattedData);
+        }
+    });
+}
+
+// 정산표 데이터가 변경될 때 호출되어 플레이어 관련 모든 정보를 업데이트
+function updatePlayerDependentInfo(playerData) {
+    updateRealtimeDataTable(playerData);
+    calculateAndDisplayPrizes(playerData);
+    updateInfoPanel(playerData);
+}
+
+// 플레이어 목록으로 테이블 UI를 생성
+function updateRealtimeDataTable(playerData) {
+    const tableBody = document.getElementById('realtime-data-tbody');
+    tableBody.innerHTML = '';
+    playerData.forEach((player, index) => {
+        const row = document.createElement('tr');
+        const buyIn = player.entries[0] || '';
+        const rebuy1 = player.entries[1] || '';
+        const rebuy2 = player.entries[2] || '';
+        // '게임정산표'에서 가져온 '입금'/'포인트' 텍스트를 그대로 표시
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${player.name || ''}</td>
+            <td>${buyIn}</td>
+            <td>${rebuy1}</td>
+            <td>${rebuy2}</td>
+            <td><button class="out-btn" data-player-name="${player.name}">Out</button></td>
+        `;
+        tableBody.appendChild(row);
+
+        row.querySelector('.out-btn').addEventListener('click', handleOutButtonClick);
+        row.addEventListener('click', () => handleRowClick(row, player.name));
+    });
+
+    // 테이블이 새로 그려졌으므로, 현재 Out 상태를 다시 적용
+    if(currentGameId){
+        gamesCollection.doc(currentGameId).collection('outedPlayers').get().then(snapshot => {
+            const outedPlayerNames = snapshot.docs.map(doc => doc.id);
+            updateOutedPlayerUI(outedPlayerNames);
+        });
+    }
+}
+
+// Out된 플레이어 UI 스타일과 생존자 수(X)를 계산/업데이트
+function updateOutedPlayerUI(outedPlayerNames) {
+    const allRows = document.querySelectorAll('#realtime-data-tbody tr');
+    let activePlayers = 0;
+    allRows.forEach(row => {
+        const outButton = row.querySelector('.out-btn');
+        if (outButton) {
+            const playerName = outButton.dataset.playerName;
+            if (outedPlayerNames.includes(playerName)) {
+                row.style.opacity = '0.5';
+                outButton.disabled = true;
+            } else {
+                row.style.opacity = '1';
+                outButton.disabled = false;
+                activePlayers++;
+            }
+        }
+    });
+    if (currentGameId) {
+        gamesCollection.doc(currentGameId).update({ players: activePlayers }); // X값 업데이트
+    }
+}
+
+// 정산표 데이터 기반으로 총 엔트리(Y)와 칩 정보를 계산/업데이트
+async function updateInfoPanel(playerData) {
+    if (!currentGameId) return;
+    let totalEntries = 0;
+    playerData.forEach(p => { totalEntries += p.entries.length; });
+    
+    // '게임정산표' 데이터에는 바이인/리바이 종류가 없으므로, 엔트리 수로만 계산
+    const buyInCount = playerData.length; // 모든 플레이어는 최소 1번의 바이인을 했다고 가정
+    let rebuy1Count = 0;
+    let rebuy2Count = 0;
+    playerData.forEach(p => {
+        if (p.entries.length >= 2) rebuy1Count++;
+        if (p.entries.length >= 3) rebuy2Count++;
+    });
+
+    const totalChips = (buyInCount * 40000) + (rebuy1Count * 50000) + (rebuy2Count * 80000);
+
+    await gamesCollection.doc(currentGameId).update({
+        totalPlayers: totalEntries, // Y값 업데이트
+        totalChips: totalChips
+    });
+}
+
+// 상금 계산 함수
+function calculateAndDisplayPrizes(playerData) {
+    const totalPlayers = playerData.length;
+    let totalBuyIns = 0;
+    playerData.forEach(p => { totalBuyIns += p.entries.length; });
     const totalPrize = 250 * totalBuyIns;
     let percentages = { p1: 0, p2: 0, p3: 0, p4: 0, p5: 0 };
     if (totalPlayers >= 18) {
@@ -154,145 +257,103 @@ function calculateAndDisplayPrizes(playerData) {
     for (let i = 1; i <= 5; i++) {
         const prizeElement = document.getElementById(`prize-${i}`);
         if (prizeElement) {
-            const prizeAmount = prizes[i - 1];
-            prizeElement.textContent = prizeAmount > 0 ? prizeAmount.toLocaleString() : '0';
+            prizeElement.textContent = prizes[i - 1] > 0 ? prizes[i - 1].toLocaleString() : '0';
         }
     }
 }
 
-async function handleUpdateData() {
-    isDataLoaded = false; 
-    const updateButton = document.getElementById('update-data-btn');
-    updateButton.textContent = '로딩 중...';
-    updateButton.disabled = true;
+// 이하 코드는 수정할 필요 없이 그대로 유지됩니다.
+// ... (기존 script.js의 나머지 모든 함수들) ...
 
-    try {
-        const response = await fetch('https://holdemresult.onrender.com/api/game-data');
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const apiData = await response.json();
-        const formattedData = apiData.player_status.map(player => ({
-            rank: player.number,
-            name: player.player ? player.player.trim() : '',
-            buyIn: player.buy_in,
-            rebuy1: player.rebuy1,
-            rebuy2: player.rebuy2
-        }));
-        
-        calculateAndDisplayPrizes(formattedData);
-        updateRealtimeDataTable(formattedData);
-        await updateTimerInfoFromPlayerData(formattedData);
-
-        isDataLoaded = true; 
-
-        const outedPlayersSnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').get();
-        const outedPlayerNames = outedPlayersSnapshot.docs.map(doc => doc.id);
-        updateOutedPlayerUI(outedPlayerNames);
-
-    } catch (error) {
-        console.error("외부 데이터 업데이트 실패:", error);
-        alert(`데이터를 가져오는 데 실패했습니다. 서버가 실행 중인지, CORS 설정이 올바른지 확인해주세요.\n오류: ${error.message}`);
-    } finally {
-        updateButton.textContent = '업데이트';
-        updateButton.disabled = false;
+// 잠금 상태 UI 업데이트
+function updateLockUI(isLocked) {
+    const lockButton = document.getElementById('lock-btn');
+    const controlsToLock = [
+        document.getElementById('prev-level-btn'),
+        document.getElementById('play-pause-btn'),
+        document.getElementById('next-level-btn'),
+        document.getElementById('time-minus-btn'),
+        document.getElementById('time-plus-btn'),
+        document.getElementById('heads-up-btn'),
+        document.getElementById('time-slider')
+    ];
+    if (isLocked) {
+        lockButton.classList.add('locked');
+        lockButton.textContent = '잠금 해제';
+        controlsToLock.forEach(control => { if (control) control.disabled = true; });
+    } else {
+        lockButton.classList.remove('locked');
+        lockButton.textContent = '잠금';
+        controlsToLock.forEach(control => { if (control) control.disabled = false; });
     }
 }
 
-function updateOutedPlayerUI(outedPlayerNames) {
-    if (!isDataLoaded) return;
-    const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-    let activePlayers = 0; 
-    allRows.forEach(row => {
-        const outButton = row.querySelector('.out-btn');
-        if (outButton) {
-            const playerName = outButton.dataset.playerName;
-            if (outedPlayerNames.includes(playerName)) {
-                row.style.opacity = '0.5';
-                outButton.disabled = true;
-            } else {
-                row.style.opacity = '1';
-                outButton.disabled = false;
-                activePlayers++;
-            }
-        }
-    });
-    if (currentGameId) {
-        gamesCollection.doc(currentGameId).update({ players: activePlayers });
-    }
-}
-
-function joinGame(gameId) {
-    showPage('timer-page');
-    handleUpdateData();
-    lastPlayedLevelIndex = -1;
-    oneMinuteAlertPlayed = false;
-    if (unsubscribe) unsubscribe();
-    if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
-    unsubscribe = gamesCollection.doc(gameId).onSnapshot(doc => {
-        if (doc.exists) {
-            updateTimerUI(doc.data());
-        } else {
-            alert("존재하지 않는 게임입니다.");
-            goHome();
-        }
-    });
-    unsubscribeOutedPlayers = gamesCollection.doc(gameId).collection('outedPlayers')
-        .onSnapshot(snapshot => {
-            const outedPlayerNames = snapshot.docs.map(doc => doc.id);
-            updateOutedPlayerUI(outedPlayerNames);
-        }, error => {
-            console.error("Out된 플레이어 목록 실시간 동기화 실패:", error);
-        });
-}
-
-function updateRealtimeDataTable(data) {
-    const tableBody = document.getElementById('realtime-data-tbody');
-    if (!tableBody) return;
-    tableBody.innerHTML = '';
-    data.forEach(player => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${player.rank || ''}</td>
-            <td>${player.name || ''}</td>
-            <td>${player.buyIn || ''}</td>
-            <td>${player.rebuy1 || ''}</td>
-            <td>${player.rebuy2 || ''}</td>
-            <td><button class="out-btn" data-player-name="${player.name}">Out</button></td>
-        `;
-        tableBody.appendChild(row);
-        const outButton = row.querySelector('.out-btn');
-        if (outButton) {
-            outButton.addEventListener('click', handleOutButtonClick);
-        }
-        row.addEventListener('click', () => handleRowClick(row, player.name));
-    });
-}
-
-async function updateTimerInfoFromPlayerData(playersData) {
+// 잠금 상태 DB 업데이트
+async function toggleLock() {
     if (!currentGameId) return;
-    let totalEntries = 0;
-    playersData.forEach(player => {
-        if (player.buyIn) totalEntries++;
-        if (player.rebuy1) totalEntries++;
-        if (player.rebuy2) totalEntries++;
-    });
-    let buyInCount = 0;
-    let rebuy1Count = 0;
-    let rebuy2Count = 0;
-    playersData.forEach(player => {
-        if (player.buyIn) buyInCount++;
-        if (player.rebuy1) rebuy1Count++;
-        if (player.rebuy2) rebuy2Count++;
-    });
-    const buyInChips = buyInCount * 40000;
-    const rebuy1Chips = rebuy1Count * 50000;
-    const rebuy2Chips = rebuy2Count * 80000;
-    const totalChips = buyInChips + rebuy1Chips + rebuy2Chips;
     const gameRef = gamesCollection.doc(currentGameId);
-    await gameRef.update({
-        totalPlayers: totalEntries,
-        totalChips: totalChips
-    });
+    try {
+        const doc = await gameRef.get();
+        if (doc.exists) {
+            const currentLockState = doc.data().isLocked || false;
+            await gameRef.update({ isLocked: !currentLockState });
+        }
+    } catch (error) { console.error("잠금 상태 업데이트 실패:", error); }
+}
+
+// 타이머 UI를 업데이트하는 메인 함수
+function updateTimerUI(gameData) {
+    if (!gameData) return;
+    if (timerTimeout) clearTimeout(timerTimeout);
+
+    updateLockUI(gameData.isLocked || false);
+    const isHeadsUpActive = !!gameData.originalDurations;
+    document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
+
+    const schedule = buildSchedule(gameData.settings);
+    
+    const timerLoop = () => {
+        if (gameData.isPaused) return;
+        const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
+        
+        if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) playSound('levelup');
+        if (currentLevelIndex !== lastPlayedLevelIndex) {
+            if (lastPlayedLevelIndex !== -1) {
+                const newLevel = schedule[currentLevelIndex];
+                if (newLevel?.isBreak) playSound('break');
+                else playSound('levelup');
+            }
+            lastPlayedLevelIndex = currentLevelIndex;
+            oneMinuteAlertPlayed = false;
+        }
+        displayTime(timeLeftInLevel, document.getElementById('timer-label'));
+        displayLevelInfo(schedule, currentLevelIndex);
+        displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
+        calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
+        calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
+        document.getElementById('players-info').textContent = `${gameData.players || 0}/${gameData.totalPlayers || 0}`;
+        document.getElementById('play-pause-btn').textContent = gameData.isPaused ? '>' : '||';
+        if (!isSeeking) {
+            const currentLevelDuration = schedule[currentLevelIndex]?.duration * 60 || 0;
+            const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
+            document.getElementById('time-slider').value = progress;
+        }
+
+        const now = Date.now();
+        const nextTick = Math.ceil(now / 1000) * 1000;
+        timerTimeout = setTimeout(timerLoop, nextTick - now);
+    };
+
+    if (!gameData.isPaused) {
+        timerLoop();
+    } else {
+        const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
+        displayTime(timeLeftInLevel, document.getElementById('timer-label'));
+        displayLevelInfo(schedule, currentLevelIndex);
+        displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
+        calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
+        calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
+    }
 }
 
 async function handleOutButtonClick(event) {
@@ -325,13 +386,31 @@ async function handleRowClick(row, playerName) {
 }
 
 function goHome() {
-    if (unsubscribe) unsubscribe();
+    if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
-    unsubscribe = null;
+    if (unsubscribeSettlement) unsubscribeSettlement();
+    if (timerTimeout) clearTimeout(timerTimeout);
+    unsubscribeTimer = null;
     unsubscribeOutedPlayers = null;
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = null;
+    unsubscribeSettlement = null;
+    timerTimeout = null;
     window.location.href = window.location.pathname;
+}
+
+async function createNewGame() {
+    const settings = captureSettings();
+    try {
+        const docRef = await gamesCollection.add({
+            settings: settings,
+            startTime: firebase.firestore.FieldValue.serverTimestamp(),
+            isPaused: false,
+            isLocked: false 
+        });
+        window.location.href = `?game=${docRef.id}`;
+    } catch (error) {
+        console.error("Error creating new game: ", error);
+        alert("게임을 생성하는 데 실패했습니다.");
+    }
 }
 
 function toggleSound() {
@@ -365,32 +444,14 @@ function playSound(type) {
     }
 }
 
-async function createNewGame() {
-    const settings = captureSettings();
-    try {
-        const docRef = await gamesCollection.add({
-            settings: settings,
-            startTime: firebase.firestore.FieldValue.serverTimestamp(),
-            isPaused: false,
-            isLocked: false // 새 게임 생성 시 isLocked 필드 추가
-        });
-        window.location.href = `?game=${docRef.id}`;
-    } catch (error) {
-        console.error("Error creating new game: ", error);
-        alert("게임을 생성하는 데 실패했습니다.");
-    }
-}
-
 async function toggleHeadsUp() {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
     const doc = await gameRef.get();
     if (!doc.exists) return;
-
     const gameData = doc.data();
     const settings = gameData.settings;
     const isHeadsUpActive = !!gameData.originalDurations;
-
     const schedule = buildSchedule(settings);
     const { currentLevelIndex } = calculateCurrentState(gameData, schedule);
     let currentBlindLevelNumber = 0;
@@ -405,23 +466,19 @@ async function toggleHeadsUp() {
             }
         }
     }
-
     if (isHeadsUpActive) {
         const originalDurations = gameData.originalDurations;
-        
         const restoredBlinds = settings.blinds.map((blind, index) => {
             if (blind.level > currentBlindLevelNumber) {
                 return { ...blind, duration: originalDurations[index] ?? blind.duration };
             }
             return blind;
         });
-
         await gameRef.update({
             'settings.blinds': restoredBlinds,
             originalDurations: firebase.firestore.FieldValue.delete()
         });
         alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
-
     } else {
         const originalDurations = settings.blinds.map(blind => blind.duration);
         const newBlinds = settings.blinds.map(blind => {
@@ -430,7 +487,6 @@ async function toggleHeadsUp() {
             }
             return blind;
         });
-
         await gameRef.update({
             'settings.blinds': newBlinds,
             originalDurations: originalDurations
@@ -450,56 +506,6 @@ function buildSchedule(settings) {
         });
     }
     return schedule;
-}
-
-function updateTimerUI(gameData) {
-    if (!gameData) return;
-    if (timerInterval) clearInterval(timerInterval);
-    
-    // isLocked 상태를 Firestore 데이터로부터 직접 읽어 UI에 반영
-    updateLockUI(gameData.isLocked || false);
-
-    const isHeadsUpActive = !!gameData.originalDurations;
-    document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
-
-    const schedule = buildSchedule(gameData.settings);
-    
-    const update = () => {
-        const { currentLevelIndex, timeLeftInLevel, elapsedSeconds } = calculateCurrentState(gameData, schedule);
-        
-        if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
-            playSound('levelup');
-            oneMinuteAlertPlayed = true;
-        }
-        if (currentLevelIndex !== lastPlayedLevelIndex) {
-            if (lastPlayedLevelIndex !== -1) {
-                const newLevel = schedule[currentLevelIndex];
-                if (newLevel?.isBreak) playSound('break');
-                else playSound('levelup');
-            }
-            lastPlayedLevelIndex = currentLevelIndex;
-            oneMinuteAlertPlayed = false;
-        }
-        displayTime(timeLeftInLevel, document.getElementById('timer-label'));
-        displayLevelInfo(schedule, currentLevelIndex);
-        displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
-        calculateAndDisplayChipInfo(gameData, schedule, currentLevelIndex);
-        calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
-        
-        const players = gameData.players || 0;
-        const totalPlayers = gameData.totalPlayers || 0;
-        document.getElementById('players-info').textContent = `${players}/${totalPlayers}`;
-        document.getElementById('play-pause-btn').textContent = gameData.isPaused ? '>' : '||';
-        if (!isSeeking) {
-            const currentLevelDuration = schedule[currentLevelIndex]?.duration * 60 || 0;
-            const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
-            document.getElementById('time-slider').value = progress;
-        }
-    };
-    update();
-    if (gameData.isPaused === false) {
-       timerInterval = setInterval(update, 1000);
-    }
 }
 
 async function showOutListModal() {
@@ -680,6 +686,7 @@ function calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelInde
         document.getElementById('next-break-levels-info').textContent = "No more breaks";
     }
 }
+
 async function togglePlayPause() {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
@@ -703,6 +710,7 @@ async function togglePlayPause() {
         });
     }
 }
+
 async function changeLevel(direction) {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
@@ -726,6 +734,7 @@ async function changeLevel(direction) {
         });
     }
 }
+
 async function adjustTime(seconds) {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
@@ -742,6 +751,7 @@ async function adjustTime(seconds) {
         });
     }
 }
+
 async function seekTime(value, finalUpdate) {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
@@ -766,6 +776,7 @@ async function seekTime(value, finalUpdate) {
         }
     }
 }
+
 function populateBlindSettings() {
     const blindGridBody = document.getElementById('blind-grid-body');
     blindGridBody.innerHTML = '';
@@ -788,6 +799,7 @@ function populateBlindSettings() {
         button.addEventListener('click', handleApplyBelow);
     });
 }
+
 function handleApplyBelow(event) {
     const clickedRow = event.target.closest('.blind-grid-row');
     const clickedIndex = parseInt(clickedRow.dataset.index, 10);
@@ -800,12 +812,14 @@ function handleApplyBelow(event) {
         }
     });
 }
+
 function applyAllDurations() {
     const newDuration = document.getElementById('all-duration-spinner').value;
     document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
         input.value = newDuration;
     });
 }
+
 function captureSettings() {
     const blinds = [];
     document.querySelectorAll('.blind-grid-row').forEach(row => {
@@ -823,6 +837,7 @@ function captureSettings() {
         breakDuration: parseInt(document.getElementById('break-duration').value)
     };
 }
+
 function getDefaultBlinds() {
     return [
         { level: 1, small: 100, big: 200, ante: 200, duration: 15 }, { level: 2, small: 200, big: 300, ante: 300, duration: 15 },
