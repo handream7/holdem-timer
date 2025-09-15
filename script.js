@@ -144,7 +144,7 @@ function gameLoop() {
     const schedule = buildSchedule(currentGamedata.settings);
     const { elapsedSeconds: trueElapsed } = calculateCurrentState(currentGamedata, schedule);
 
-    if (displayElapsedSeconds === 0) {
+    if (displayElapsedSeconds === 0 && trueElapsed > 0) { // 게임 시작 후 첫 로딩 시 시간 맞춤
         displayElapsedSeconds = trueElapsed;
     }
     
@@ -237,76 +237,6 @@ function calculateStateFromElapsed(elapsedSeconds, schedule) {
     return { currentLevelIndex, timeLeftInLevel, cumulativeSeconds };
 }
 
-
-// --- 💡 수정된 부분 시작 💡 ---
-async function toggleHeadsUp() {
-    if (!currentGameId) return;
-
-    const gameRef = gamesCollection.doc(currentGameId);
-    const doc = await gameRef.get();
-    if (!doc.exists) return;
-
-    const gameData = doc.data();
-    const settings = gameData.settings;
-    const isHeadsUpActive = !!gameData.originalDurations;
-    const schedule = buildSchedule(settings);
-
-    // 현재 서버 시간을 기준으로 정확한 레벨 인덱스를 계산
-    const { elapsedSeconds } = calculateCurrentState(gameData, schedule);
-    const { currentLevelIndex } = calculateStateFromElapsed(elapsedSeconds, schedule);
-    
-    let currentBlindLevelNumber = 0;
-    const currentLevelInfo = schedule[currentLevelIndex];
-
-    // 현재 레벨이 브레이크 타임인지 확인하고, 아니라면 레벨 번호를 가져옴
-    if (currentLevelInfo && !currentLevelInfo.isBreak) {
-        currentBlindLevelNumber = currentLevelInfo.level;
-    } else {
-        // 만약 브레이크 타임이라면, 그 이전의 마지막 블라인드 레벨을 찾음
-        for (let i = currentLevelIndex; i >= 0; i--) {
-            if (schedule[i] && !schedule[i].isBreak) {
-                currentBlindLevelNumber = schedule[i].level;
-                break;
-            }
-        }
-    }
-
-    if (isHeadsUpActive) {
-        // HEADS-UP 끄기: 저장해둔 원래 시간으로 복구
-        const originalDurations = gameData.originalDurations;
-        const restoredBlinds = settings.blinds.map((blind, index) => {
-            // 미래의 레벨들만 복구
-            if (blind.level > currentBlindLevelNumber) {
-                return { ...blind, duration: originalDurations[index] ?? blind.duration };
-            }
-            return blind;
-        });
-        await gameRef.update({
-            'settings.blinds': restoredBlinds,
-            originalDurations: firebase.firestore.FieldValue.delete()
-        });
-        alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
-    } else {
-        // HEADS-UP 켜기: 원래 시간을 저장하고, 미래 레벨을 5분으로 변경
-        const originalDurations = settings.blinds.map(blind => blind.duration);
-        const newBlinds = settings.blinds.map(blind => {
-            // 미래의 레벨들만 5분으로 변경
-            if (blind.level > currentBlindLevelNumber) {
-                return { ...blind, duration: 5 };
-            }
-            return blind;
-        });
-        await gameRef.update({
-            'settings.blinds': newBlinds,
-            originalDurations: originalDurations
-        });
-        alert('헤즈업 모드가 설정되었습니다. 다음 레벨부터 5분으로 적용됩니다.');
-    }
-}
-// --- 💡 수정된 부분 끝 💡 ---
-
-
-// 이하 코드는 변경 없습니다.
 function updatePlayerDependentInfo(playerData) {
     updateRealtimeDataTable(playerData);
     calculateAndDisplayPrizes(playerData);
@@ -339,9 +269,22 @@ function updateRealtimeDataTable(playerData) {
         });
     }
 }
+
+// --- 💡 수정된 부분 시작 💡 ---
+// Out된 플레이어 UI 스타일과 생존자 수(X)를 계산/업데이트
 function updateOutedPlayerUI(outedPlayerNames) {
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-    let activePlayers = 0;
+    
+    // 1. 화면에 그려진 전체 플레이어 수를 확인 (가장 정확한 기준)
+    const totalPlayerCount = allRows.length;
+    
+    // 2. Out 처리된 플레이어 수 확인
+    const outedPlayerCount = outedPlayerNames.length;
+    
+    // 3. (전체 플레이어 수) - (Out된 플레이어 수) = 생존자 수(X)
+    const activePlayers = totalPlayerCount - outedPlayerCount;
+
+    // UI 스타일링 (기존과 동일)
     allRows.forEach(row => {
         const outButton = row.querySelector('.out-btn');
         if (outButton) {
@@ -352,14 +295,17 @@ function updateOutedPlayerUI(outedPlayerNames) {
             } else {
                 row.style.opacity = '1';
                 outButton.disabled = false;
-                activePlayers++;
             }
         }
     });
+
+    // 4. 계산된 정확한 값으로 DB 업데이트
     if (currentGameId) {
         gamesCollection.doc(currentGameId).update({ players: activePlayers });
     }
 }
+// --- 💡 수정된 부분 끝 💡 ---
+
 async function updateInfoPanel(playerData) {
     if (!currentGameId) return;
     let totalEntries = 0;
@@ -509,7 +455,63 @@ function playSound(type) {
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
     }
 }
+async function toggleHeadsUp() {
+    if (!currentGameId) return;
 
+    const gameRef = gamesCollection.doc(currentGameId);
+    const doc = await gameRef.get();
+    if (!doc.exists) return;
+
+    const gameData = doc.data();
+    const settings = gameData.settings;
+    const isHeadsUpActive = !!gameData.originalDurations;
+    const schedule = buildSchedule(settings);
+
+    const { elapsedSeconds } = calculateCurrentState(gameData, schedule);
+    const { currentLevelIndex } = calculateStateFromElapsed(elapsedSeconds, schedule);
+    
+    let currentBlindLevelNumber = 0;
+    const currentLevelInfo = schedule[currentLevelIndex];
+
+    if (currentLevelInfo && !currentLevelInfo.isBreak) {
+        currentBlindLevelNumber = currentLevelInfo.level;
+    } else {
+        for (let i = currentLevelIndex; i >= 0; i--) {
+            if (schedule[i] && !schedule[i].isBreak) {
+                currentBlindLevelNumber = schedule[i].level;
+                break;
+            }
+        }
+    }
+
+    if (isHeadsUpActive) {
+        const originalDurations = gameData.originalDurations;
+        const restoredBlinds = settings.blinds.map((blind, index) => {
+            if (blind.level > currentBlindLevelNumber) {
+                return { ...blind, duration: originalDurations[index] ?? blind.duration };
+            }
+            return blind;
+        });
+        await gameRef.update({
+            'settings.blinds': restoredBlinds,
+            originalDurations: firebase.firestore.FieldValue.delete()
+        });
+        alert('헤즈업 모드가 해제되었습니다. 다음 레벨부터 기존 시간으로 돌아갑니다.');
+    } else {
+        const originalDurations = settings.blinds.map(blind => blind.duration);
+        const newBlinds = settings.blinds.map(blind => {
+            if (blind.level > currentBlindLevelNumber) {
+                return { ...blind, duration: 5 };
+            }
+            return blind;
+        });
+        await gameRef.update({
+            'settings.blinds': newBlinds,
+            originalDurations: originalDurations
+        });
+        alert('헤즈업 모드가 설정되었습니다. 다음 레벨부터 5분으로 적용됩니다.');
+    }
+}
 function buildSchedule(settings) {
     const schedule = [];
     if (settings && settings.blinds) {
