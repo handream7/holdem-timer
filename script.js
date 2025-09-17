@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-    // 이벤트 리스너 설정 코드는 변경 없습니다.
     document.getElementById('create-game-btn').addEventListener('click', () => { showPage('settings-page'); populateBlindSettings(); });
     document.getElementById('play-button').addEventListener('click', createNewGame);
     document.getElementById('play-pause-btn').addEventListener('click', togglePlayPause);
@@ -87,7 +86,37 @@ function setupEventListeners() {
     timeSlider.addEventListener('change', () => { seekTime(timeSlider.value, true); isSeeking = false; });
     timeSlider.addEventListener('mouseup', () => { if (isSeeking) isSeeking = false; });
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
+
+    // ==================== 💡 추가된 부분 시작 💡 ====================
+    document.getElementById('competition-mode-btn').addEventListener('click', applyCompetitionMode);
+    // ==================== 💡 추가된 부분 끝 💡 ====================
 }
+
+// ==================== 💡 추가된 부분 시작 💡 ====================
+function applyCompetitionMode() {
+    // Break 설정 변경
+    document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
+    document.getElementById('break-duration').value = '7';
+
+    // 레벨별 Duration 변경
+    const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
+    allRows.forEach(row => {
+        const levelText = row.querySelector('div').textContent;
+        const level = parseInt(levelText, 10);
+        const durationInput = row.querySelector('.duration-input');
+
+        if (level >= 1 && level <= 10) {
+            durationInput.value = 30;
+        } else if (level >= 11 && level <= 15) {
+            durationInput.value = 25;
+        } else if (level >= 16 && level <= 20) {
+            durationInput.value = 20;
+        } else if (level >= 21 && level <= 26) {
+            durationInput.value = 15;
+        }
+    });
+}
+// ==================== 💡 추가된 부분 끝 💡 ====================
 
 function joinGame(gameId) {
     showPage('timer-page');
@@ -270,21 +299,13 @@ function updateRealtimeDataTable(playerData) {
     }
 }
 
-// --- 💡 수정된 부분 시작 💡 ---
-// Out된 플레이어 UI 스타일과 생존자 수(X)를 계산/업데이트
 function updateOutedPlayerUI(outedPlayerNames) {
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
     
-    // 1. 화면에 그려진 전체 플레이어 수를 확인 (가장 정확한 기준)
     const totalPlayerCount = allRows.length;
-    
-    // 2. Out 처리된 플레이어 수 확인
     const outedPlayerCount = outedPlayerNames.length;
-    
-    // 3. (전체 플레이어 수) - (Out된 플레이어 수) = 생존자 수(X)
     const activePlayers = totalPlayerCount - outedPlayerCount;
 
-    // UI 스타일링 (기존과 동일)
     allRows.forEach(row => {
         const outButton = row.querySelector('.out-btn');
         if (outButton) {
@@ -299,12 +320,10 @@ function updateOutedPlayerUI(outedPlayerNames) {
         }
     });
 
-    // 4. 계산된 정확한 값으로 DB 업데이트
     if (currentGameId) {
         gamesCollection.doc(currentGameId).update({ players: activePlayers });
     }
 }
-// --- 💡 수정된 부분 끝 💡 ---
 
 async function updateInfoPanel(playerData) {
     if (!currentGameId) return;
@@ -374,13 +393,11 @@ function updateLockUI(isLocked) {
     }
 }
 
-// --- 💡 추가된 함수 시작 💡 ---
 function toggleSound() {
-    isSoundOn = !isSoundOn; // 전역 변수 isSoundOn의 상태를 변경
+    isSoundOn = !isSoundOn;
     const soundBtn = document.getElementById('sound-toggle-btn');
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
 }
-// --- 💡 추가된 함수 끝 💡 ---
 
 async function toggleLock() {
     if (!currentGameId) return;
@@ -423,7 +440,6 @@ async function handleRowClick(row, playerName) {
 async function createNewGame() {
     const settings = captureSettings();
 
-    // 1. 현재 날짜와 시간으로 문서 ID 생성 (예: 20250917-130237)
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -434,15 +450,13 @@ async function createNewGame() {
     const customGameId = `${year}${month}${day}-${hours}${minutes}${seconds}`;
 
     try {
-        // 2. .add() 대신 .doc(사용자정의ID).set()을 사용하여 저장
         await gamesCollection.doc(customGameId).set({
             settings: settings,
-            startTime: firebase.firestore.FieldValue.serverTimestamp(), // 서버 시간 기록은 정확성을 위해 그대로 유지
+            startTime: firebase.firestore.FieldValue.serverTimestamp(),
             isPaused: false,
             isLocked: false
         });
         
-        // 3. 직접 만든 ID를 사용하여 페이지 URL 변경
         window.location.href = `?game=${customGameId}`;
     } catch (error) {
         console.error("Error creating new game: ", error);

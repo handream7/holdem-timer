@@ -376,3 +376,24 @@ h1, h2 {
     border-radius: 4px;
     font-size: 1.1rem;
 }
+
+/* ==================== 💡 추가된 부분 시작 💡 ==================== */
+.preset-buttons {
+    margin-top: 15px;
+    margin-bottom: 5px;
+}
+
+.preset-buttons button {
+    font-size: 1rem;
+    padding: 10px 20px;
+    cursor: pointer;
+    border: 1px solid #555;
+    border-radius: 5px;
+    background-color: #0056b3;
+    color: #e0e0e0;
+    transition: background-color 0.3s;
+}
+.preset-buttons button:hover {
+    background-color: #007bff;
+}
+/* ==================== 💡 추가된 부분 끝 💡 ==================== */
