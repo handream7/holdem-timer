@@ -377,7 +377,6 @@ h1, h2 {
     font-size: 1.1rem;
 }
 
-/* ==================== 💡 추가된 부분 시작 💡 ==================== */
 .preset-buttons {
     margin-top: 15px;
     margin-bottom: 5px;
@@ -392,8 +391,17 @@ h1, h2 {
     background-color: #0056b3;
     color: #e0e0e0;
     transition: background-color 0.3s;
+    margin: 0 5px; /* 버튼 사이 간격 추가 */
 }
 .preset-buttons button:hover {
     background-color: #007bff;
+}
+
+/* ==================== 💡 추가된 부분 시작 💡 ==================== */
+#gems-mode-btn {
+    background-color: #28a745; /* 초록색 계열 */
+}
+#gems-mode-btn:hover {
+    background-color: #218838;
 }
 /* ==================== 💡 추가된 부분 끝 💡 ==================== */

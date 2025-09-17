@@ -87,12 +87,13 @@ function setupEventListeners() {
     timeSlider.addEventListener('mouseup', () => { if (isSeeking) isSeeking = false; });
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 
-    // ==================== 💡 추가된 부분 시작 💡 ====================
     document.getElementById('competition-mode-btn').addEventListener('click', applyCompetitionMode);
+    
+    // ==================== 💡 추가된 부분 시작 💡 ====================
+    document.getElementById('gems-mode-btn').addEventListener('click', applyGemsMode);
     // ==================== 💡 추가된 부분 끝 💡 ====================
 }
 
-// ==================== 💡 추가된 부분 시작 💡 ====================
 function applyCompetitionMode() {
     // Break 설정 변경
     document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
@@ -116,7 +117,19 @@ function applyCompetitionMode() {
         }
     });
 }
+
+// ==================== 💡 추가된 부분 시작 💡 ====================
+function applyGemsMode() {
+    // Break Duration 변경
+    document.getElementById('break-duration').value = '10';
+
+    // 모든 레벨의 Duration을 14로 변경
+    document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
+        input.value = 14;
+    });
+}
 // ==================== 💡 추가된 부분 끝 💡 ====================
+
 
 function joinGame(gameId) {
     showPage('timer-page');
