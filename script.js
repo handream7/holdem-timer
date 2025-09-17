@@ -178,7 +178,7 @@ function renderTimerDisplay() {
     const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(displayElapsedSeconds, schedule);
 
     if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
-        playSound('levelup');
+        playSound('oneMinute');
         oneMinuteAlertPlayed = true;
     }
     if (currentLevelIndex !== lastPlayedLevelIndex) {
@@ -373,6 +373,15 @@ function updateLockUI(isLocked) {
         controlsToLock.forEach(control => { if (control) control.disabled = false; });
     }
 }
+
+// --- 💡 추가된 함수 시작 💡 ---
+function toggleSound() {
+    isSoundOn = !isSoundOn; // 전역 변수 isSoundOn의 상태를 변경
+    const soundBtn = document.getElementById('sound-toggle-btn');
+    soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
+}
+// --- 💡 추가된 함수 끝 💡 ---
+
 async function toggleLock() {
     if (!currentGameId) return;
     const gameRef = gamesCollection.doc(currentGameId);
@@ -442,7 +451,19 @@ async function createNewGame() {
 }
 function playSound(type) {
     if (!isSoundOn) return;
-    const sound = (type === 'break') ? document.getElementById('break-sound') : document.getElementById('levelup-sound');
+    let sound;
+    switch (type) {
+        case 'break':
+            sound = document.getElementById('break-sound');
+            break;
+        case 'oneMinute':
+            sound = document.getElementById('one-minute-sound');
+            break;
+        case 'levelup':
+        default:
+            sound = document.getElementById('levelup-sound');
+            break;
+    }
     if (sound) {
         sound.currentTime = 0;
         sound.play().catch(error => console.error("오디오 재생 오류:", error));
