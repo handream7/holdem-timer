@@ -413,38 +413,31 @@ async function handleRowClick(row, playerName) {
 }
 async function createNewGame() {
     const settings = captureSettings();
+
+    // 1. 현재 날짜와 시간으로 문서 ID 생성 (예: 20250917-130237)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    const seconds = String(now.getSeconds()).padStart(2, '0');
+    const customGameId = `${year}${month}${day}-${hours}${minutes}${seconds}`;
+
     try {
-        const docRef = await gamesCollection.add({
+        // 2. .add() 대신 .doc(사용자정의ID).set()을 사용하여 저장
+        await gamesCollection.doc(customGameId).set({
             settings: settings,
-            startTime: firebase.firestore.FieldValue.serverTimestamp(),
+            startTime: firebase.firestore.FieldValue.serverTimestamp(), // 서버 시간 기록은 정확성을 위해 그대로 유지
             isPaused: false,
             isLocked: false
         });
-        window.location.href = `?game=${docRef.id}`;
+        
+        // 3. 직접 만든 ID를 사용하여 페이지 URL 변경
+        window.location.href = `?game=${customGameId}`;
     } catch (error) {
         console.error("Error creating new game: ", error);
         alert("게임을 생성하는 데 실패했습니다.");
-    }
-}
-function toggleSound() {
-    isSoundOn = !isSoundOn;
-    const soundBtn = document.getElementById('sound-toggle-btn');
-    soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
-    const levelupSound = document.getElementById('levelup-sound');
-    const breakSound = document.getElementById('break-sound');
-    if (isSoundOn) {
-        if (levelupSound && levelupSound.paused) {
-            levelupSound.play().then(() => levelupSound.pause()).catch(e => console.error("소리 활성화 실패:", e));
-        }
-    } else {
-        if (levelupSound) {
-            levelupSound.pause();
-            levelupSound.currentTime = 0;
-        }
-        if (breakSound) {
-            breakSound.pause();
-            breakSound.currentTime = 0;
-        }
     }
 }
 function playSound(type) {
