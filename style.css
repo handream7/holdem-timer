@@ -391,17 +391,26 @@ h1, h2 {
     background-color: #0056b3;
     color: #e0e0e0;
     transition: background-color 0.3s;
-    margin: 0 5px; /* 버튼 사이 간격 추가 */
+    margin: 0 5px;
 }
 .preset-buttons button:hover {
     background-color: #007bff;
 }
 
-/* ==================== 💡 추가된 부분 시작 💡 ==================== */
 #gems-mode-btn {
-    background-color: #28a745; /* 초록색 계열 */
+    background-color: #28a745; 
 }
 #gems-mode-btn:hover {
     background-color: #218838;
+}
+
+/* ==================== 💡 추가된 부분 시작 💡 ==================== */
+#default-mode-btn {
+    background-color: #FFB6C1; /* 파스텔 핑크 */
+    color: #333; /* 밝은 배경에 어울리는 어두운 글자색 */
+    border-color: #e8a5b1;
+}
+#default-mode-btn:hover {
+    background-color: #f7a8b6;
 }
 /* ==================== 💡 추가된 부분 끝 💡 ==================== */

@@ -88,24 +88,20 @@ function setupEventListeners() {
     timeSlider.addEventListener('touchend', () => { if (isSeeking) isSeeking = false; });
 
     document.getElementById('competition-mode-btn').addEventListener('click', applyCompetitionMode);
-    
-    // ==================== 💡 추가된 부분 시작 💡 ====================
     document.getElementById('gems-mode-btn').addEventListener('click', applyGemsMode);
+    // ==================== 💡 추가된 부분 시작 💡 ====================
+    document.getElementById('default-mode-btn').addEventListener('click', applyDefaultMode);
     // ==================== 💡 추가된 부분 끝 💡 ====================
 }
 
 function applyCompetitionMode() {
-    // Break 설정 변경
     document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
     document.getElementById('break-duration').value = '7';
-
-    // 레벨별 Duration 변경
     const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
     allRows.forEach(row => {
         const levelText = row.querySelector('div').textContent;
         const level = parseInt(levelText, 10);
         const durationInput = row.querySelector('.duration-input');
-
         if (level >= 1 && level <= 10) {
             durationInput.value = 30;
         } else if (level >= 11 && level <= 15) {
@@ -118,14 +114,34 @@ function applyCompetitionMode() {
     });
 }
 
-// ==================== 💡 추가된 부분 시작 💡 ====================
+// ==================== 💡 수정된 부분 시작 💡 ====================
 function applyGemsMode() {
-    // Break Duration 변경
     document.getElementById('break-duration').value = '10';
-
-    // 모든 레벨의 Duration을 14로 변경
+    document.getElementById('chip-settings').value = '4, 5, 5'; // Chip Setting 값 변경
     document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
         input.value = 14;
+    });
+}
+// ==================== 💡 수정된 부분 끝 💡 ====================
+
+// ==================== 💡 추가된 부분 시작 💡 ====================
+function applyDefaultMode() {
+    // 상단 설정 초기화
+    document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
+    document.getElementById('break-duration').value = '7';
+    document.getElementById('chip-settings').value = '4, 5, 8';
+    document.getElementById('all-duration-spinner').value = '15';
+
+    // 블라인드 목록의 Duration을 기본값으로 초기화
+    const defaultBlinds = getDefaultBlinds();
+    const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
+    allRows.forEach(row => {
+        const level = parseInt(row.querySelector('div').textContent, 10);
+        const durationInput = row.querySelector('.duration-input');
+        const defaultBlindData = defaultBlinds.find(b => b.level === level);
+        if (defaultBlindData) {
+            durationInput.value = defaultBlindData.duration;
+        }
     });
 }
 // ==================== 💡 추가된 부분 끝 💡 ====================
@@ -186,7 +202,7 @@ function gameLoop() {
     const schedule = buildSchedule(currentGamedata.settings);
     const { elapsedSeconds: trueElapsed } = calculateCurrentState(currentGamedata, schedule);
 
-    if (displayElapsedSeconds === 0 && trueElapsed > 0) { // 게임 시작 후 첫 로딩 시 시간 맞춤
+    if (displayElapsedSeconds === 0 && trueElapsed > 0) {
         displayElapsedSeconds = trueElapsed;
     }
     
@@ -349,12 +365,20 @@ async function updateInfoPanel(playerData) {
         if (p.entries.length >= 2) rebuy1Count++;
         if (p.entries.length >= 3) rebuy2Count++;
     });
-    const totalChips = (buyInCount * 40000) + (rebuy1Count * 50000) + (rebuy2Count * 80000);
+
+    const chipValues = currentGamedata.settings?.chipSettings || [4, 5, 8];
+    const buyInChips = (chipValues[0] || 4) * 10000;
+    const rebuy1Chips = (chipValues[1] || 5) * 10000;
+    const rebuy2Chips = (chipValues[2] || 8) * 10000;
+
+    const totalChips = (buyInCount * buyInChips) + (rebuy1Count * rebuy1Chips) + (rebuy2Count * rebuy2Chips);
+    
     await gamesCollection.doc(currentGameId).update({
         totalPlayers: totalEntries,
         totalChips: totalChips
     });
 }
+
 function calculateAndDisplayPrizes(playerData) {
     const totalPlayers = playerData.length;
     let totalBuyIns = 0;
@@ -874,7 +898,8 @@ function captureSettings() {
     return {
         blinds: blinds,
         breakLevels: document.getElementById('break-levels').value.split(',').map(n => parseInt(n.trim())).filter(Number.isFinite),
-        breakDuration: parseInt(document.getElementById('break-duration').value)
+        breakDuration: parseInt(document.getElementById('break-duration').value),
+        chipSettings: document.getElementById('chip-settings').value.split(',').map(n => parseFloat(n.trim()))
     };
 }
 function getDefaultBlinds() {
