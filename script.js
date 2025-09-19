@@ -92,11 +92,10 @@ function setupEventListeners() {
     document.getElementById('default-mode-btn').addEventListener('click', applyDefaultMode);
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 function applyCompetitionMode() {
     document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
     document.getElementById('break-duration').value = '7';
-    document.getElementById('chip-settings').value = '4, 5, 8'; // Chip Setting 값 설정 추가
+    document.getElementById('chip-settings').value = '4, 5, 8';
     const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
     allRows.forEach(row => {
         const levelText = row.querySelector('div').textContent;
@@ -113,15 +112,17 @@ function applyCompetitionMode() {
         }
     });
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
+// ==================== 💡 수정된 부분 시작 💡 ====================
 function applyGemsMode() {
+    document.getElementById('break-levels').value = '5, 10, 15, 20, 25'; // Break Levels 값 설정 추가
     document.getElementById('break-duration').value = '10';
     document.getElementById('chip-settings').value = '4, 5, 5';
     document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
         input.value = 14;
     });
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function applyDefaultMode() {
     document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
