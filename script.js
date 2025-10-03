@@ -113,16 +113,14 @@ function applyCompetitionMode() {
     });
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 function applyGemsMode() {
-    document.getElementById('break-levels').value = '5, 10, 15, 20, 25'; // Break Levels 값 설정 추가
+    document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
     document.getElementById('break-duration').value = '10';
     document.getElementById('chip-settings').value = '4, 5, 5';
     document.querySelectorAll('.blind-grid-row .duration-input').forEach(input => {
         input.value = 14;
     });
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function applyDefaultMode() {
     document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
@@ -432,17 +430,26 @@ function toggleSound() {
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
 }
 
-async function toggleLock() {
-    if (!currentGameId) return;
+// ==================== 💡 수정된 부분 시작 💡 ====================
+function toggleLock() {
+    //currentGameId나 currentGamedata가 아직 준비되지 않았으면 함수를 종료합니다.
+    if (!currentGameId || !currentGamedata.settings) return;
+
     const gameRef = gamesCollection.doc(currentGameId);
-    try {
-        const doc = await gameRef.get();
-        if (doc.exists) {
-            const currentLockState = doc.data().isLocked || false;
-            await gameRef.update({ isLocked: !currentLockState });
-        }
-    } catch (error) { console.error("잠금 상태 업데이트 실패:", error); }
+    // 현재 앱이 알고 있는 잠금 상태를 가져옵니다.
+    const currentLockState = currentGamedata.isLocked || false;
+
+    // 데이터베이스의 isLocked 필드 값을 현재 상태의 반대 값으로 업데이트합니다.
+    gameRef.update({ isLocked: !currentLockState })
+        .catch(error => {
+            console.error("잠금 상태 업데이트 실패:", error);
+            alert("잠금 상태를 변경하는데 실패했습니다.");
+        });
+    // UI 변경은 onSnapshot 리스너가 데이터 변경을 감지하여 자동으로 처리하므로
+    // 이 함수에서는 별도의 UI 조작 코드가 필요 없습니다.
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
+
 async function handleOutButtonClick(event) {
     event.stopPropagation();
     const button = event.target;
