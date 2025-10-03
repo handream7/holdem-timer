@@ -493,7 +493,7 @@ async function createNewGame() {
         await gamesCollection.doc(customGameId).set({
             settings: settings,
             startTime: firebase.firestore.FieldValue.serverTimestamp(),
-            isPaused: false,
+            isPaused: true,
             isLocked: false
         });
         
