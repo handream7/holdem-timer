@@ -220,18 +220,16 @@ h1, h2 {
     line-height: 1;
 }
 
-/* ==================== 💡 수정된 부분 시작 💡 ==================== */
 #blinds-label, #next-blinds-label {
     font-size: 1.5rem;
-    color: #ffffff; /* 흰색으로 변경 */
+    color: #ffffff;
     margin: 5px 0 0 0;
-    font-weight: bold; /* 볼드 처리 추가 */
+    font-weight: bold;
 }
 #next-blinds-label {
     font-size: 1rem;
-    color: #e0e0e0; /* 메인 블라인드보다 약간 덜 밝은 흰색으로 계층 구분 */
+    color: #e0e0e0;
 }
-/* ==================== 💡 수정된 부분 끝 💡 ==================== */
 
 .controls-area {
     width: 100%;
@@ -260,7 +258,6 @@ h1, h2 {
     font-size: 1.5rem;
 }
 
-/* 비활성화된 컨트롤 버튼 스타일 추가 */
 .controls-area button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
@@ -275,7 +272,6 @@ h1, h2 {
     justify-content: flex-start;
 }
 
-/* 잠금 버튼 ID 추가 */
 #go-home-btn, #sound-toggle-btn, #update-data-btn, #out-list-btn, #lock-btn { 
     padding: 6px 12px;
     font-size: 0.8rem;
@@ -286,7 +282,6 @@ h1, h2 {
     cursor: pointer;
 }
 
-/* 활성화된 잠금 버튼 스타일 추가 */
 #lock-btn.locked {
     background-color: #0056b3;
     border-color: #007bff;
@@ -417,3 +412,15 @@ h1, h2 {
 #default-mode-btn:hover {
     background-color: #f7a8b6;
 }
+
+/* ==================== 💡 추가된 부분 시작 💡 ==================== */
+#wake-lock-video {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+/* ==================== 💡 추가된 부분 끝 💡 ==================== */

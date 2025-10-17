@@ -95,7 +95,7 @@ function setupEventListeners() {
 function applyCompetitionMode() {
     document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
     document.getElementById('break-duration').value = '7';
-    document.getElementById('chip-settings').value = '4, 5, 8';
+    document.getElementById('chip-settings').value = '4, 5, 7';
     const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
     allRows.forEach(row => {
         const levelText = row.querySelector('div').textContent;
@@ -125,7 +125,7 @@ function applyGemsMode() {
 function applyDefaultMode() {
     document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
     document.getElementById('break-duration').value = '7';
-    document.getElementById('chip-settings').value = '4, 5, 8';
+    document.getElementById('chip-settings').value = '4, 5, 7';
     document.getElementById('all-duration-spinner').value = '15';
 
     const defaultBlinds = getDefaultBlinds();
@@ -140,6 +140,46 @@ function applyDefaultMode() {
     });
 }
 
+// ==================== 💡 추가된 부분 시작 💡 ====================
+let wakeLockSentinel = null;
+
+// 화면 꺼짐 방지 기능을 관리하는 함수
+const manageWakeLock = async () => {
+    // 1. Wake Lock API 지원 여부 확인 (주로 안드로이드/크롬)
+    if ('wakeLock' in navigator) {
+        const requestWakeLock = async () => {
+            try {
+                wakeLockSentinel = await navigator.wakeLock.request('screen');
+                console.log('화면 꺼짐 방지 기능이 활성화되었습니다.');
+            } catch (err) {
+                console.error(`${err.name}, ${err.message}`);
+            }
+        };
+        
+        // 즉시 화면 꺼짐 방지 요청
+        await requestWakeLock();
+
+        // 다른 화면으로 갔다가 다시 돌아왔을 때, 꺼짐 방지를 재요청
+        document.addEventListener('visibilitychange', async () => {
+            if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
+                await requestWakeLock();
+            }
+        });
+
+    } else { // 2. Wake Lock API 미지원 시 (주로 iOS/사파리)
+        console.log('Wake Lock API를 지원하지 않아 비디오 재생 방식으로 화면 꺼짐을 방지합니다.');
+        const video = document.getElementById('wake-lock-video');
+        try {
+            // 소리 없는 비디오를 재생하여 화면이 꺼지지 않게 함
+            await video.play();
+            console.log('iOS 화면 꺼짐 방지를 위해 비디오 재생을 시작합니다.');
+        } catch (err) {
+            console.error('비디오 자동 재생에 실패했습니다:', err);
+        }
+    }
+};
+// ==================== 💡 추가된 부분 끝 💡 ====================
+
 
 function joinGame(gameId) {
     showPage('timer-page');
@@ -148,6 +188,11 @@ function joinGame(gameId) {
     if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
+
+    // ==================== 💡 추가된 부분 시작 💡 ====================
+    // 게임 화면으로 진입할 때 화면 꺼짐 방지 기능 활성화
+    manageWakeLock();
+    // ==================== 💡 추가된 부분 끝 💡 ====================
 
     unsubscribeTimer = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
@@ -360,7 +405,7 @@ async function updateInfoPanel(playerData) {
         if (p.entries.length >= 3) rebuy2Count++;
     });
 
-    const chipValues = currentGamedata.settings?.chipSettings || [4, 5, 8];
+    const chipValues = currentGamedata.settings?.chipSettings || [4, 5, 7];
     const buyInChips = (chipValues[0] || 4) * 10000;
     const rebuy1Chips = (chipValues[1] || 5) * 10000;
     const rebuy2Chips = (chipValues[2] || 8) * 10000;
@@ -430,25 +475,18 @@ function toggleSound() {
     soundBtn.textContent = isSoundOn ? '소리 끄기' : '소리 켜기';
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 function toggleLock() {
-    //currentGameId나 currentGamedata가 아직 준비되지 않았으면 함수를 종료합니다.
     if (!currentGameId || !currentGamedata.settings) return;
 
     const gameRef = gamesCollection.doc(currentGameId);
-    // 현재 앱이 알고 있는 잠금 상태를 가져옵니다.
     const currentLockState = currentGamedata.isLocked || false;
 
-    // 데이터베이스의 isLocked 필드 값을 현재 상태의 반대 값으로 업데이트합니다.
     gameRef.update({ isLocked: !currentLockState })
         .catch(error => {
             console.error("잠금 상태 업데이트 실패:", error);
             alert("잠금 상태를 변경하는데 실패했습니다.");
         });
-    // UI 변경은 onSnapshot 리스너가 데이터 변경을 감지하여 자동으로 처리하므로
-    // 이 함수에서는 별도의 UI 조작 코드가 필요 없습니다.
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
 async function handleOutButtonClick(event) {
     event.stopPropagation();
@@ -503,6 +541,7 @@ async function createNewGame() {
         alert("게임을 생성하는 데 실패했습니다.");
     }
 }
+
 function playSound(type) {
     if (!isSoundOn) return;
     let sound;
