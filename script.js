@@ -95,7 +95,7 @@ function setupEventListeners() {
 function applyCompetitionMode() {
     document.getElementById('break-levels').value = '2,4,6,8,10,13,16,20,24';
     document.getElementById('break-duration').value = '7';
-    document.getElementById('chip-settings').value = '4, 5, 7';
+    document.getElementById('chip-settings').value = '4, 5, 5';
     const allRows = document.querySelectorAll('.blind-grid-body .blind-grid-row');
     allRows.forEach(row => {
         const levelText = row.querySelector('div').textContent;
@@ -125,7 +125,7 @@ function applyGemsMode() {
 function applyDefaultMode() {
     document.getElementById('break-levels').value = '5, 10, 15, 20, 25';
     document.getElementById('break-duration').value = '7';
-    document.getElementById('chip-settings').value = '4, 5, 7';
+    document.getElementById('chip-settings').value = '4, 5, 5';
     document.getElementById('all-duration-spinner').value = '15';
 
     const defaultBlinds = getDefaultBlinds();
