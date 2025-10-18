@@ -140,45 +140,22 @@ function applyDefaultMode() {
     });
 }
 
-// ==================== 💡 추가된 부분 시작 💡 ====================
-let wakeLockSentinel = null;
-
-// 화면 꺼짐 방지 기능을 관리하는 함수
+// ==================== 💡 수정된 부분 시작 💡 ====================
+// 화면 꺼짐 방지 기능을 관리하는 함수 (비디오 재생 방식으로 통일)
 const manageWakeLock = async () => {
-    // 1. Wake Lock API 지원 여부 확인 (주로 안드로이드/크롬)
-    if ('wakeLock' in navigator) {
-        const requestWakeLock = async () => {
-            try {
-                wakeLockSentinel = await navigator.wakeLock.request('screen');
-                console.log('화면 꺼짐 방지 기능이 활성화되었습니다.');
-            } catch (err) {
-                console.error(`${err.name}, ${err.message}`);
-            }
-        };
-        
-        // 즉시 화면 꺼짐 방지 요청
-        await requestWakeLock();
-
-        // 다른 화면으로 갔다가 다시 돌아왔을 때, 꺼짐 방지를 재요청
-        document.addEventListener('visibilitychange', async () => {
-            if (wakeLockSentinel !== null && document.visibilityState === 'visible') {
-                await requestWakeLock();
-            }
-        });
-
-    } else { // 2. Wake Lock API 미지원 시 (주로 iOS/사파리)
-        console.log('Wake Lock API를 지원하지 않아 비디오 재생 방식으로 화면 꺼짐을 방지합니다.');
-        const video = document.getElementById('wake-lock-video');
-        try {
-            // 소리 없는 비디오를 재생하여 화면이 꺼지지 않게 함
-            await video.play();
-            console.log('iOS 화면 꺼짐 방지를 위해 비디오 재생을 시작합니다.');
-        } catch (err) {
-            console.error('비디오 자동 재생에 실패했습니다:', err);
-        }
+    console.log('비디오 재생 방식으로 화면 꺼짐을 방지합니다.');
+    const video = document.getElementById('wake-lock-video');
+    try {
+        // 소리 없는 비디오를 재생하여 화면이 꺼지지 않게 함
+        await video.play();
+        console.log('화면 꺼짐 방지를 위해 비디오 재생을 시작합니다.');
+    } catch (err) {
+        console.error('비디오 자동 재생에 실패했습니다:', err);
+        // 사용자에게 페이지와 상호작용(터치 등)을 유도하여 비디오를 재생할 수 있도록 안내
+        document.body.addEventListener('click', () => video.play(), { once: true });
     }
 };
-// ==================== 💡 추가된 부분 끝 💡 ====================
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
 
 function joinGame(gameId) {
@@ -189,10 +166,8 @@ function joinGame(gameId) {
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
 
-    // ==================== 💡 추가된 부분 시작 💡 ====================
     // 게임 화면으로 진입할 때 화면 꺼짐 방지 기능 활성화
     manageWakeLock();
-    // ==================== 💡 추가된 부분 끝 💡 ====================
 
     unsubscribeTimer = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
@@ -304,11 +279,20 @@ function renderTimerDisplay() {
     }
 }
 
+// ==================== 💡 수정된 부분 시작 💡 ====================
 function goHome() {
     if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
     if (gameLoopId) cancelAnimationFrame(gameLoopId); 
+    
+    // 화면 꺼짐 방지 비디오 정지
+    const video = document.getElementById('wake-lock-video');
+    if (video) {
+        video.pause();
+        console.log('화면 꺼짐 방지 비디오를 중지합니다.');
+    }
+
     unsubscribeTimer = null;
     unsubscribeOutedPlayers = null;
     unsubscribeSettlement = null;
@@ -317,6 +301,7 @@ function goHome() {
     lastTickTimestamp = 0; 
     window.location.href = window.location.pathname;
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function calculateStateFromElapsed(elapsedSeconds, schedule) {
     let cumulativeSeconds = 0;
@@ -405,10 +390,10 @@ async function updateInfoPanel(playerData) {
         if (p.entries.length >= 3) rebuy2Count++;
     });
 
-    const chipValues = currentGamedata.settings?.chipSettings || [4, 5, 7];
+    const chipValues = currentGamedata.settings?.chipSettings || [4, 5, 5];
     const buyInChips = (chipValues[0] || 4) * 10000;
     const rebuy1Chips = (chipValues[1] || 5) * 10000;
-    const rebuy2Chips = (chipValues[2] || 8) * 10000;
+    const rebuy2Chips = (chipValues[2] || 5) * 10000;
 
     const totalChips = (buyInCount * buyInChips) + (rebuy1Count * rebuy1Chips) + (rebuy2Count * rebuy2Chips);
     
