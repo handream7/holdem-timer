@@ -30,10 +30,13 @@ const gamesCollection = db.collection('games');
 // 전역 변수
 let currentGameId = null;
 let gameLoopId = null; 
-let displayElapsedSeconds = 0; 
-let lastTickTimestamp = 0; 
 let currentGamedata = {}; 
 
+// ==================== 💡 수정된 부분 시작 💡 ====================
+// 시간 오차를 유발하던 전역 변수 삭제
+// let displayElapsedSeconds = 0; 
+// let lastTickTimestamp = 0; 
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
 let unsubscribeTimer = null;
 let unsubscribeOutedPlayers = null;
@@ -140,23 +143,16 @@ function applyDefaultMode() {
     });
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
-// 화면 꺼짐 방지 기능을 관리하는 함수 (비디오 재생 방식으로 통일)
-const manageWakeLock = async () => {
-    console.log('비디오 재생 방식으로 화면 꺼짐을 방지합니다.');
+const manageWakeLock = (active) => {
     const video = document.getElementById('wake-lock-video');
-    try {
-        // 소리 없는 비디오를 재생하여 화면이 꺼지지 않게 함
-        await video.play();
-        console.log('화면 꺼짐 방지를 위해 비디오 재생을 시작합니다.');
-    } catch (err) {
-        console.error('비디오 자동 재생에 실패했습니다:', err);
-        // 사용자에게 페이지와 상호작용(터치 등)을 유도하여 비디오를 재생할 수 있도록 안내
-        document.body.addEventListener('click', () => video.play(), { once: true });
+    if (!video) return;
+
+    if (active) {
+        video.play().catch(err => console.error("화면 꺼짐 방지 비디오 재생 실패:", err));
+    } else {
+        video.pause();
     }
 };
-// ==================== 💡 수정된 부분 끝 💡 ====================
-
 
 function joinGame(gameId) {
     showPage('timer-page');
@@ -165,9 +161,6 @@ function joinGame(gameId) {
     if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
-
-    // 게임 화면으로 진입할 때 화면 꺼짐 방지 기능 활성화
-    manageWakeLock();
 
     unsubscribeTimer = gamesCollection.doc(gameId).onSnapshot(doc => {
         if (doc.exists) {
@@ -197,57 +190,47 @@ function joinGame(gameId) {
 function updateTimerState(gameData) {
     currentGamedata = gameData; 
 
+    // 타이머 상태에 따라 화면 꺼짐 방지 기능 제어
+    manageWakeLock(!currentGamedata.isPaused);
+
     updateLockUI(currentGamedata.isLocked || false);
     const isHeadsUpActive = !!currentGamedata.originalDurations;
     document.getElementById('heads-up-btn').textContent = isHeadsUpActive ? 'HEADS-UP OFF' : 'HEADS-UP ON';
 
     if (!gameLoopId) {
-        lastTickTimestamp = Date.now();
         gameLoopId = requestAnimationFrame(gameLoop);
     }
 }
 
+// ==================== 💡 수정된 부분 시작 💡 ====================
 function gameLoop() {
+    // currentGamedata가 없으면 루프를 계속 돌리기만 함
     if (!currentGamedata.settings) {
         gameLoopId = requestAnimationFrame(gameLoop);
         return; 
     }
 
+    // 블라인드 스케줄 생성
     const schedule = buildSchedule(currentGamedata.settings);
-    const { elapsedSeconds: trueElapsed } = calculateCurrentState(currentGamedata, schedule);
-
-    if (displayElapsedSeconds === 0 && trueElapsed > 0) {
-        displayElapsedSeconds = trueElapsed;
-    }
     
-    const offset = trueElapsed - displayElapsedSeconds;
-
-    if (Math.abs(offset) > 5) {
-        displayElapsedSeconds = trueElapsed;
-    } else {
-        const now = Date.now();
-        const delta = (now - lastTickTimestamp) / 1000; 
-        lastTickTimestamp = now;
-
-        if (!currentGamedata.isPaused) {
-            displayElapsedSeconds += delta + (offset * 0.1);
-        }
-    }
+    // 서버 시간을 기준으로 '진짜' 경과 시간을 직접 계산
+    const { elapsedSeconds } = calculateCurrentState(currentGamedata, schedule);
     
-    if (currentGamedata.isPaused) {
-        lastTickTimestamp = Date.now();
-    }
+    // 계산된 경과 시간을 화면에 바로 렌더링
+    renderTimerDisplay(elapsedSeconds, schedule);
     
-    renderTimerDisplay();
-    
+    // 다음 프레임 요청
     gameLoopId = requestAnimationFrame(gameLoop);
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
-function renderTimerDisplay() {
-    if (!currentGamedata.settings) return;
 
-    const schedule = buildSchedule(currentGamedata.settings);
-    const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(displayElapsedSeconds, schedule);
+// ==================== 💡 수정된 부분 시작 💡 ====================
+// renderTimerDisplay 함수가 경과 시간(elapsedSeconds)과 스케줄을 인자로 받도록 수정
+function renderTimerDisplay(elapsedSeconds, schedule) {
+    // elapsedSeconds와 schedule을 직접 사용하므로 더 이상 내부에서 계산할 필요 없음
+
+    const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(elapsedSeconds, schedule);
 
     if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
         playSound('oneMinute');
@@ -265,9 +248,9 @@ function renderTimerDisplay() {
 
     displayTime(timeLeftInLevel, document.getElementById('timer-label'));
     displayLevelInfo(schedule, currentLevelIndex);
-    displayTime(displayElapsedSeconds, document.getElementById('total-time-info'), true);
+    displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
     calculateAndDisplayChipInfo(currentGamedata, schedule, currentLevelIndex);
-    calculateAndDisplayNextBreak(displayElapsedSeconds, schedule, currentLevelIndex);
+    calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
     
     document.getElementById('players-info').textContent = `${currentGamedata.players || 0}/${currentGamedata.totalPlayers || 0}`;
     document.getElementById('play-pause-btn').textContent = currentGamedata.isPaused ? '>' : '||';
@@ -278,30 +261,21 @@ function renderTimerDisplay() {
         document.getElementById('time-slider').value = progress;
     }
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
+
 function goHome() {
+    manageWakeLock(false);
     if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
     if (gameLoopId) cancelAnimationFrame(gameLoopId); 
-    
-    // 화면 꺼짐 방지 비디오 정지
-    const video = document.getElementById('wake-lock-video');
-    if (video) {
-        video.pause();
-        console.log('화면 꺼짐 방지 비디오를 중지합니다.');
-    }
-
     unsubscribeTimer = null;
     unsubscribeOutedPlayers = null;
     unsubscribeSettlement = null;
     gameLoopId = null;
-    displayElapsedSeconds = 0; 
-    lastTickTimestamp = 0; 
     window.location.href = window.location.pathname;
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function calculateStateFromElapsed(elapsedSeconds, schedule) {
     let cumulativeSeconds = 0;
@@ -777,7 +751,9 @@ async function togglePlayPause() {
     const doc = await gameRef.get();
     if (!doc.exists) return;
     const gameData = doc.data();
+
     if (gameData.isPaused) {
+        manageWakeLock(true);
         const elapsedSecondsOnPause = gameData.elapsedSecondsOnPause || 0;
         const newStartTimeMillis = Date.now() - (elapsedSecondsOnPause * 1000);
         await gameRef.update({
@@ -786,6 +762,7 @@ async function togglePlayPause() {
             elapsedSecondsOnPause: firebase.firestore.FieldValue.delete()
         });
     } else {
+        manageWakeLock(false);
         const schedule = buildSchedule(gameData.settings);
         const {
             elapsedSeconds
