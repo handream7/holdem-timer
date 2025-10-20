@@ -222,13 +222,13 @@ h1, h2 {
 
 #blinds-label, #next-blinds-label {
     font-size: 1.5rem;
-    color: #ffffff;
+    color: #ffffff; 
     margin: 5px 0 0 0;
-    font-weight: bold;
+    font-weight: bold; 
 }
 #next-blinds-label {
     font-size: 1rem;
-    color: #e0e0e0;
+    color: #e0e0e0; 
 }
 
 .controls-area {
@@ -272,7 +272,7 @@ h1, h2 {
     justify-content: flex-start;
 }
 
-#go-home-btn, #sound-toggle-btn, #update-data-btn, #out-list-btn, #lock-btn { 
+#go-home-btn, #sound-toggle-btn, #out-list-btn, #lock-btn { 
     padding: 6px 12px;
     font-size: 0.8rem;
     background-color: #444;
@@ -413,7 +413,6 @@ h1, h2 {
     background-color: #f7a8b6;
 }
 
-/* ==================== 💡 추가된 부분 시작 💡 ==================== */
 #wake-lock-video {
     position: absolute;
     top: -9999px;
@@ -423,4 +422,3 @@ h1, h2 {
     opacity: 0;
     pointer-events: none;
 }
-/* ==================== 💡 추가된 부분 끝 💡 ==================== */

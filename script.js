@@ -32,11 +32,6 @@ let currentGameId = null;
 let gameLoopId = null; 
 let currentGamedata = {}; 
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
-// 시간 오차를 유발하던 전역 변수 삭제
-// let displayElapsedSeconds = 0; 
-// let lastTickTimestamp = 0; 
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
 let unsubscribeTimer = null;
 let unsubscribeOutedPlayers = null;
@@ -71,9 +66,7 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('lock-btn').addEventListener('click', toggleLock);
-    document.getElementById('update-data-btn').addEventListener('click', () => {
-        alert("플레이어 정보는 이제 자동으로 업데이트됩니다.");
-    });
+    
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
     modal.querySelector('.close-btn').addEventListener('click', () => modal.style.display = 'none');
@@ -190,7 +183,6 @@ function joinGame(gameId) {
 function updateTimerState(gameData) {
     currentGamedata = gameData; 
 
-    // 타이머 상태에 따라 화면 꺼짐 방지 기능 제어
     manageWakeLock(!currentGamedata.isPaused);
 
     updateLockUI(currentGamedata.isLocked || false);
@@ -202,33 +194,21 @@ function updateTimerState(gameData) {
     }
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 function gameLoop() {
-    // currentGamedata가 없으면 루프를 계속 돌리기만 함
     if (!currentGamedata.settings) {
         gameLoopId = requestAnimationFrame(gameLoop);
         return; 
     }
 
-    // 블라인드 스케줄 생성
     const schedule = buildSchedule(currentGamedata.settings);
-    
-    // 서버 시간을 기준으로 '진짜' 경과 시간을 직접 계산
     const { elapsedSeconds } = calculateCurrentState(currentGamedata, schedule);
     
-    // 계산된 경과 시간을 화면에 바로 렌더링
     renderTimerDisplay(elapsedSeconds, schedule);
     
-    // 다음 프레임 요청
     gameLoopId = requestAnimationFrame(gameLoop);
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
-
-// ==================== 💡 수정된 부분 시작 💡 ====================
-// renderTimerDisplay 함수가 경과 시간(elapsedSeconds)과 스케줄을 인자로 받도록 수정
 function renderTimerDisplay(elapsedSeconds, schedule) {
-    // elapsedSeconds와 schedule을 직접 사용하므로 더 이상 내부에서 계산할 필요 없음
 
     const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(elapsedSeconds, schedule);
 
@@ -261,8 +241,6 @@ function renderTimerDisplay(elapsedSeconds, schedule) {
         document.getElementById('time-slider').value = progress;
     }
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
-
 
 function goHome() {
     manageWakeLock(false);
