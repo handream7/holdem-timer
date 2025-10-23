@@ -213,6 +213,36 @@ h1, h2 {
     font-size: 2.5rem;
     margin: 0;
 }
+.timer-wrapper {
+    position: relative; 
+    display: inline-block; 
+}
+
+/* ==================== 💡 수정된 부분 시작 💡 ==================== */
+#paused-indicator {
+    display: none; 
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%); 
+    background-color: transparent; 
+    color: red; 
+    font-size: 5rem; /* 글자 크기 증가 */
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 10px; 
+    border: 8px solid red; /* 테두리 두께 증가 */
+    z-index: 8; 
+    white-space: nowrap; 
+    min-width: 180px; 
+    text-align: center; 
+}
+/* ==================== 💡 수정된 부분 끝 💡 ==================== */
+
+.timer-paused #paused-indicator {
+    display: block; 
+}
+
 #timer-label {
     font-size: 8rem;
     font-weight: bold;
@@ -220,14 +250,45 @@ h1, h2 {
     line-height: 1;
 }
 
-#blinds-label, #next-blinds-label {
-    font-size: 1.5rem;
+#blinds-label { /* Flexbox로 아이콘과 텍스트 정렬 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem; 
     color: #ffffff; 
     margin: 5px 0 0 0;
     font-weight: bold; 
 }
+
+/* 아이콘 스타일 추가 */
+.blind-icon {
+    display: inline-flex; /* 내부 'B' 정렬 위해 flex 사용 */
+    align-items: center;
+    justify-content: center;
+    width: 1.5em; /* 아이콘 크기 (font-size 기준) */
+    height: 1.5em; /* 아이콘 크기 */
+    background-color: #555; /* 아이콘 배경색 */
+    color: #fff; /* 아이콘 글자색 */
+    border-radius: 50%; /* 원 모양 */
+    font-size: 0.8em; /* 아이콘 내 'B' 크기 조정 */
+    font-weight: bold;
+    margin-right: 0.5em; /* 아이콘과 숫자 사이 간격 */
+    flex-shrink: 0; /* 아이콘 크기 고정 */
+}
+
+/* 블라인드 값 스타일 (필요 시 조정) */
+.blind-values {
+    /* 특별한 스타일이 필요하면 여기에 추가 */
+}
+
+/* Next Level 스타일은 기존 유지 (아이콘 없음) */
 #next-blinds-label {
-    font-size: 1rem;
+    font-size: 1.2rem; 
+    color: #e0e0e0; 
+    /* display, align-items 등 제거 */
+}
+#next-blinds-label {
+    font-size: 1.2rem; 
     color: #e0e0e0; 
 }
 

@@ -208,9 +208,18 @@ function gameLoop() {
     gameLoopId = requestAnimationFrame(gameLoop);
 }
 
+// ==================== 💡 수정된 부분 시작 💡 ====================
 function renderTimerDisplay(elapsedSeconds, schedule) {
 
     const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(elapsedSeconds, schedule);
+
+    // PAUSED 표시 로직 추가
+    const timerWrapper = document.querySelector('.timer-wrapper'); // 타이머 숫자와 PAUSED 표시를 감싸는 부모 요소
+    if (currentGamedata.isPaused) {
+        timerWrapper.classList.add('timer-paused'); // paused 클래스 추가
+    } else {
+        timerWrapper.classList.remove('timer-paused'); // paused 클래스 제거
+    }
 
     if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
         playSound('oneMinute');
@@ -241,6 +250,8 @@ function renderTimerDisplay(elapsedSeconds, schedule) {
         document.getElementById('time-slider').value = progress;
     }
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
+
 
 function goHome() {
     manageWakeLock(false);
@@ -667,14 +678,24 @@ function displayTime(seconds, element, withHours = false) {
 function displayLevelInfo(schedule, index) {
     const currentLevel = schedule[index];
     const nextLevel = schedule[index + 1];
+    const blindsLabelElement = document.getElementById('blinds-label'); // 요소를 변수에 저장
+
     if (!currentLevel) return;
+
     if (currentLevel.isBreak) {
         document.getElementById('level-label').textContent = "BREAK";
-        document.getElementById('blinds-label').textContent = "휴식 시간입니다";
+        // Break 시에는 아이콘 없이 텍스트만 표시
+        blindsLabelElement.innerHTML = "휴식 시간입니다";
+        blindsLabelElement.style.display = 'block'; // 혹시 flex로 되어있을까봐 block으로 변경
     } else {
         document.getElementById('level-label').textContent = `Level ${currentLevel.level}`;
-        document.getElementById('blinds-label').textContent = `Blinds: ${currentLevel.small.toLocaleString()} / ${currentLevel.big.toLocaleString()} / ${currentLevel.ante.toLocaleString()}`;
+        // 아이콘과 블라인드 값 표시
+        const blindValues = `${currentLevel.small.toLocaleString()} / ${currentLevel.big.toLocaleString()} / ${currentLevel.ante.toLocaleString()}`;
+        blindsLabelElement.innerHTML = `<span class="blind-icon">B</span> <span class="blind-values">${blindValues}</span>`;
+        blindsLabelElement.style.display = 'flex'; // 다시 flex로 설정
     }
+
+    // Next Level 부분은 그대로 유지
     if (nextLevel) {
         if (nextLevel.isBreak) {
             document.getElementById('next-blinds-label').textContent = `Next: BREAK`;
