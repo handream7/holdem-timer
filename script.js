@@ -29,8 +29,8 @@ const gamesCollection = db.collection('games');
 
 // 전역 변수
 let currentGameId = null;
-let gameLoopId = null; 
-let currentGamedata = {}; 
+let gameLoopId = null;
+let currentGamedata = {};
 
 
 let unsubscribeTimer = null;
@@ -66,7 +66,7 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('lock-btn').addEventListener('click', toggleLock);
-    
+
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
     modal.querySelector('.close-btn').addEventListener('click', () => modal.style.display = 'none');
@@ -163,7 +163,7 @@ function joinGame(gameId) {
             goHome();
         }
     });
-    
+
     unsubscribeOutedPlayers = gamesCollection.doc(gameId).collection('outedPlayers').onSnapshot(snapshot => {
         const outedPlayerNames = snapshot.docs.map(doc => doc.id);
         updateOutedPlayerUI(outedPlayerNames);
@@ -181,7 +181,7 @@ function joinGame(gameId) {
 }
 
 function updateTimerState(gameData) {
-    currentGamedata = gameData; 
+    currentGamedata = gameData;
 
     manageWakeLock(!currentGamedata.isPaused);
 
@@ -197,28 +197,26 @@ function updateTimerState(gameData) {
 function gameLoop() {
     if (!currentGamedata.settings) {
         gameLoopId = requestAnimationFrame(gameLoop);
-        return; 
+        return;
     }
 
     const schedule = buildSchedule(currentGamedata.settings);
     const { elapsedSeconds } = calculateCurrentState(currentGamedata, schedule);
-    
+
     renderTimerDisplay(elapsedSeconds, schedule);
-    
+
     gameLoopId = requestAnimationFrame(gameLoop);
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 function renderTimerDisplay(elapsedSeconds, schedule) {
 
     const { currentLevelIndex, timeLeftInLevel } = calculateStateFromElapsed(elapsedSeconds, schedule);
 
-    // PAUSED 표시 로직 추가
-    const timerWrapper = document.querySelector('.timer-wrapper'); // 타이머 숫자와 PAUSED 표시를 감싸는 부모 요소
+    const timerWrapper = document.querySelector('.timer-wrapper');
     if (currentGamedata.isPaused) {
-        timerWrapper.classList.add('timer-paused'); // paused 클래스 추가
+        timerWrapper.classList.add('timer-paused');
     } else {
-        timerWrapper.classList.remove('timer-paused'); // paused 클래스 제거
+        timerWrapper.classList.remove('timer-paused');
     }
 
     if (Math.floor(timeLeftInLevel) === 60 && !oneMinuteAlertPlayed) {
@@ -240,25 +238,23 @@ function renderTimerDisplay(elapsedSeconds, schedule) {
     displayTime(elapsedSeconds, document.getElementById('total-time-info'), true);
     calculateAndDisplayChipInfo(currentGamedata, schedule, currentLevelIndex);
     calculateAndDisplayNextBreak(elapsedSeconds, schedule, currentLevelIndex);
-    
+
     document.getElementById('players-info').textContent = `${currentGamedata.players || 0}/${currentGamedata.totalPlayers || 0}`;
     document.getElementById('play-pause-btn').textContent = currentGamedata.isPaused ? '>' : '||';
-    
+
     if (!isSeeking) {
         const currentLevelDuration = schedule[currentLevelIndex]?.duration * 60 || 0;
         const progress = currentLevelDuration > 0 ? 1 - (timeLeftInLevel / currentLevelDuration) : 0;
         document.getElementById('time-slider').value = progress;
     }
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
-
 
 function goHome() {
     manageWakeLock(false);
     if (unsubscribeTimer) unsubscribeTimer();
     if (unsubscribeOutedPlayers) unsubscribeOutedPlayers();
     if (unsubscribeSettlement) unsubscribeSettlement();
-    if (gameLoopId) cancelAnimationFrame(gameLoopId); 
+    if (gameLoopId) cancelAnimationFrame(gameLoopId);
     unsubscribeTimer = null;
     unsubscribeOutedPlayers = null;
     unsubscribeSettlement = null;
@@ -307,7 +303,7 @@ function updateRealtimeDataTable(playerData) {
         row.querySelector('.out-btn').addEventListener('click', handleOutButtonClick);
         row.addEventListener('click', () => handleRowClick(row, player.name));
     });
-    if(currentGameId){
+    if (currentGameId) {
         gamesCollection.doc(currentGameId).collection('outedPlayers').get().then(snapshot => {
             const outedPlayerNames = snapshot.docs.map(doc => doc.id);
             updateOutedPlayerUI(outedPlayerNames);
@@ -317,7 +313,7 @@ function updateRealtimeDataTable(playerData) {
 
 function updateOutedPlayerUI(outedPlayerNames) {
     const allRows = document.querySelectorAll('#realtime-data-tbody tr');
-    
+
     const totalPlayerCount = allRows.length;
     const outedPlayerCount = outedPlayerNames.length;
     const activePlayers = totalPlayerCount - outedPlayerCount;
@@ -359,7 +355,7 @@ async function updateInfoPanel(playerData) {
     const rebuy2Chips = (chipValues[2] || 5) * 10000;
 
     const totalChips = (buyInCount * buyInChips) + (rebuy1Count * rebuy1Chips) + (rebuy2Count * rebuy2Chips);
-    
+
     await gamesCollection.doc(currentGameId).update({
         totalPlayers: totalEntries,
         totalChips: totalChips
@@ -482,7 +478,7 @@ async function createNewGame() {
             isPaused: true,
             isLocked: false
         });
-        
+
         window.location.href = `?game=${customGameId}`;
     } catch (error) {
         console.error("Error creating new game: ", error);
@@ -524,7 +520,7 @@ async function toggleHeadsUp() {
 
     const { elapsedSeconds } = calculateCurrentState(gameData, schedule);
     const { currentLevelIndex } = calculateStateFromElapsed(elapsedSeconds, schedule);
-    
+
     let currentBlindLevelNumber = 0;
     const currentLevelInfo = schedule[currentLevelIndex];
 
@@ -588,6 +584,8 @@ function buildSchedule(settings) {
     }
     return schedule;
 }
+
+// ==================== 💡 수정된 부분 시작 💡 ====================
 async function showOutListModal() {
     if (!currentGameId) return;
     const listElement = document.getElementById('out-player-list');
@@ -596,13 +594,27 @@ async function showOutListModal() {
     modal.style.display = 'flex';
     try {
         const querySnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').orderBy('outTime', 'desc').get();
-        listElement.innerHTML = '';
+        listElement.innerHTML = ''; // Clear previous list
         if (querySnapshot.empty) {
             listElement.innerHTML = '<li>Out 처리된 플레이어가 없습니다.</li>';
         } else {
             querySnapshot.forEach(doc => {
+                const playerName = doc.id;
                 const li = document.createElement('li');
-                li.textContent = doc.id;
+
+                // Create span for player name
+                const nameSpan = document.createElement('span');
+                nameSpan.textContent = playerName;
+                li.appendChild(nameSpan);
+
+                // Create restore button
+                const restoreButton = document.createElement('button');
+                restoreButton.textContent = '복귀';
+                restoreButton.classList.add('restore-btn'); // Add class for styling
+                restoreButton.dataset.playerName = playerName; // Store player name
+                restoreButton.addEventListener('click', handleRestorePlayer); // Attach event listener
+                li.appendChild(restoreButton);
+
                 listElement.appendChild(li);
             });
         }
@@ -611,6 +623,29 @@ async function showOutListModal() {
         listElement.innerHTML = '<li>목록을 불러오는 데 실패했습니다.</li>';
     }
 }
+
+// 복귀 버튼 클릭 처리 함수
+async function handleRestorePlayer(event) {
+    const button = event.target;
+    const playerName = button.dataset.playerName;
+
+    if (!playerName || !currentGameId) return;
+
+    if (confirm(`'${playerName}'님을 복귀시키겠습니까?`)) {
+        try {
+            await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).delete();
+            // 모달을 닫고, 성공 메시지 표시
+            document.getElementById('out-list-modal').style.display = 'none';
+            alert(`'${playerName}'님이 복귀되었습니다.`);
+            // updateOutedPlayerUI가 Firestore 리스너에 의해 자동으로 호출되어 UI가 갱신됩니다.
+        } catch (error) {
+            console.error("복귀 처리 중 오류 발생:", error);
+            alert("플레이어 복귀 처리 중 오류가 발생했습니다.");
+        }
+    }
+}
+// ==================== 💡 수정된 부분 끝 💡 ====================
+
 function loadGameList() {
     const gameListDiv = document.getElementById('game-list');
     if (!gameListDiv) return;
@@ -678,24 +713,21 @@ function displayTime(seconds, element, withHours = false) {
 function displayLevelInfo(schedule, index) {
     const currentLevel = schedule[index];
     const nextLevel = schedule[index + 1];
-    const blindsLabelElement = document.getElementById('blinds-label'); // 요소를 변수에 저장
+    const blindsLabelElement = document.getElementById('blinds-label');
 
     if (!currentLevel) return;
 
     if (currentLevel.isBreak) {
         document.getElementById('level-label').textContent = "BREAK";
-        // Break 시에는 아이콘 없이 텍스트만 표시
         blindsLabelElement.innerHTML = "휴식 시간입니다";
-        blindsLabelElement.style.display = 'block'; // 혹시 flex로 되어있을까봐 block으로 변경
+        blindsLabelElement.style.display = 'block';
     } else {
         document.getElementById('level-label').textContent = `Level ${currentLevel.level}`;
-        // 아이콘과 블라인드 값 표시
         const blindValues = `${currentLevel.small.toLocaleString()} / ${currentLevel.big.toLocaleString()} / ${currentLevel.ante.toLocaleString()}`;
         blindsLabelElement.innerHTML = `<span class="blind-icon">B</span> <span class="blind-values">${blindValues}</span>`;
-        blindsLabelElement.style.display = 'flex'; // 다시 flex로 설정
+        blindsLabelElement.style.display = 'flex';
     }
 
-    // Next Level 부분은 그대로 유지
     if (nextLevel) {
         if (nextLevel.isBreak) {
             document.getElementById('next-blinds-label').textContent = `Next: BREAK`;
@@ -785,7 +817,7 @@ async function changeLevel(direction) {
     const {
         currentLevelIndex
     } = calculateStateFromElapsed(elapsedSeconds, schedule);
-    
+
     let targetLevelIndex = currentLevelIndex + direction;
     if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) return;
 
@@ -832,7 +864,7 @@ async function seekTime(value, finalUpdate) {
     const levelDuration = schedule[currentLevelIndex].duration * 60;
     const timeIntoLevel = levelDuration > 0 ? levelDuration * value : 0;
     const targetElapsedSeconds = cumulativeSeconds + timeIntoLevel;
-    
+
     if (finalUpdate) {
         if (gameData.isPaused) {
             await gameRef.update({ elapsedSecondsOnPause: targetElapsedSeconds });
