@@ -70,6 +70,7 @@ function setupEventListeners() {
     // 전체화면 버튼 및 이벤트 감지
     document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
     document.addEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Safari 대응
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -589,6 +590,56 @@ function buildSchedule(settings) {
     return schedule;
 }
 
+// 전체화면 토글 함수 (태블릿 호환성 강화)
+function toggleFullscreen() {
+    const btn = document.getElementById('fullscreen-btn');
+    const docEl = document.documentElement;
+    
+    // 현재 전체화면 상태인지 확인
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+
+    if (!isFullscreen) {
+        // 전체화면 진입 시도
+        const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
+        
+        if (requestFullScreen) {
+            requestFullScreen.call(docEl).then(() => {
+                document.body.classList.add('fullscreen-mode');
+                btn.textContent = '기존화면';
+            }).catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+                // API 에러가 나더라도 CSS 스타일은 강제 적용
+                document.body.classList.add('fullscreen-mode');
+                btn.textContent = '기존화면';
+            });
+        } else {
+            // 전체화면 API를 지원하지 않는 기기 강제 CSS 적용
+            document.body.classList.add('fullscreen-mode');
+            btn.textContent = '기존화면';
+        }
+    } else {
+        // 전체화면 해제 시도
+        const exitFullScreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+        
+        if (exitFullScreen) {
+            exitFullScreen.call(document);
+        } else {
+            handleFullscreenChange();
+        }
+    }
+}
+
+// 전체화면 상태 변경 감지
+function handleFullscreenChange() {
+    const btn = document.getElementById('fullscreen-btn');
+    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+    
+    if (!isFullscreen) {
+        document.body.classList.remove('fullscreen-mode');
+        btn.textContent = '전체화면';
+    }
+}
+
 async function showOutListModal() {
     if (!currentGameId) return;
     const listElement = document.getElementById('out-player-list');
@@ -597,7 +648,7 @@ async function showOutListModal() {
     modal.style.display = 'flex';
     try {
         const querySnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').orderBy('outTime', 'desc').get();
-        listElement.innerHTML = ''; 
+        listElement.innerHTML = ''; // Clear previous list
         if (querySnapshot.empty) {
             listElement.innerHTML = '<li>Out 처리된 플레이어가 없습니다.</li>';
         } else {
@@ -950,33 +1001,4 @@ function getDefaultBlinds() {
         { level: 23, small: 15000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
         { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 }, { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
     ];
-}
-
-// 전체화면 토글 함수
-function toggleFullscreen() {
-    const btn = document.getElementById('fullscreen-btn');
-    
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().then(() => {
-            document.body.classList.add('fullscreen-mode');
-            btn.textContent = '기존화면';
-        }).catch(err => {
-            console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-            document.body.classList.add('fullscreen-mode');
-            btn.textContent = '기존화면';
-        });
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
-    }
-}
-
-// 전체화면 상태 변경 감지 (ESC키 대응)
-function handleFullscreenChange() {
-    const btn = document.getElementById('fullscreen-btn');
-    if (!document.fullscreenElement) {
-        document.body.classList.remove('fullscreen-mode');
-        btn.textContent = '전체화면';
-    }
 }

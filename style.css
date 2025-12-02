@@ -254,7 +254,7 @@ h1, h2 {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem; /* 모바일 줄바꿈 방지 위해 약간 축소 */
+    font-size: 1.8rem;
     color: #ffffff;
     margin: 5px 0 0 0;
     font-weight: bold;
@@ -276,7 +276,7 @@ h1, h2 {
 }
 
 #next-blinds-label {
-    font-size: 1.1rem; /* 모바일 줄바꿈 방지 위해 약간 축소 */
+    font-size: 1.1rem;
     color: #e0e0e0;
     font-weight: bold;
 }
@@ -491,28 +491,31 @@ h1, h2 {
     pointer-events: none;
 }
 
-/* --- 전체화면 모드 스타일 --- */
+/* --- 전체화면 모드 스타일 (vmin 단위로 완벽 반응형 구현) --- */
 body.fullscreen-mode #timer-page {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
     height: 100vh;
+    height: 100dvh; /* 모바일 주소창 대응 */
     max-width: none;
     border-radius: 0;
     z-index: 9999;
-    padding: 20px;
+    padding: 0;
     margin: 0;
     box-sizing: border-box;
     display: flex;
     flex-direction: column;
+    background-color: #1e1e1e !important;
 }
 
-body.fullscreen-mode .left-column {
-    display: none !important;
-}
-
-body.fullscreen-mode .table-container {
+/* 숨겨야 할 요소들 */
+body.fullscreen-mode .left-column,
+body.fullscreen-mode .table-container,
+body.fullscreen-mode h1,
+body.fullscreen-mode .button-group,
+body.fullscreen-mode #game-list-container {
     display: none !important;
 }
 
@@ -520,40 +523,98 @@ body.fullscreen-mode .timer-grid-layout {
     display: flex;
     flex-direction: column;
     height: 100%;
+    width: 100%;
     grid-gap: 0;
+    justify-content: space-between;
 }
 
+/* 상단 영역 (레벨, 타이머, 블라인드) */
 body.fullscreen-mode .top-right-section {
     flex-grow: 1;
     width: 100%;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
-    margin-bottom: 20px;
+    align-items: center;
+    margin: 0;
+    padding: 0;
 }
 
+body.fullscreen-mode .timer-display-area {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+}
+
+/* timer-wrapper: 중앙 정렬 */
+body.fullscreen-mode .timer-wrapper {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+/* ✅ 폰트 사이즈를 vmin(화면 짧은 변 기준)으로 설정하여 짤림 방지 */
 body.fullscreen-mode #timer-label {
-    font-size: 18rem;
-    margin: 20px 0;
+    font-size: 45vmin; /* 화면 최소 변의 45% */
+    margin: 0;
+    line-height: 1;
 }
+
 body.fullscreen-mode #level-label {
-    font-size: 4rem;
+    font-size: 10vmin;
+    margin-bottom: 2vh;
 }
+
 body.fullscreen-mode #blinds-label {
-    font-size: 3rem;
+    font-size: 8vmin;
+    margin-top: 2vh;
 }
-body.fullscreen-mode #next-blinds-label {
-    font-size: 2rem;
-}
+
 body.fullscreen-mode .blind-icon {
     width: 1.5em;
     height: 1.5em;
     font-size: 1em;
 }
 
+body.fullscreen-mode #next-blinds-label {
+    font-size: 5vmin;
+    margin-top: 1vh;
+}
+
+/* 하단 컨트롤 영역 */
 body.fullscreen-mode .bottom-section {
     flex-grow: 0;
-    padding: 10px;
+    padding: 20px;
     background-color: transparent;
+    width: 100%;
+    box-sizing: border-box;
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
 }
+
 body.fullscreen-mode .bottom-controls {
     justify-content: center;
+    gap: 20px;
+}
+
+body.fullscreen-mode #fullscreen-btn {
+    padding: 15px 30px;
+    font-size: 1.5rem;
+    background-color: #555;
+    border: 2px solid #777;
+    transition: background-color 0.2s;
+}
+body.fullscreen-mode #fullscreen-btn:hover {
+    background-color: #777;
+}
+
+/* PAUSED 표시도 vmin으로 비율 유지 */
+body.fullscreen-mode #paused-indicator {
+    font-size: 15vmin;
+    padding: 1vmin 4vmin;
+    border-width: 1vmin;
+    min-width: 40vmin;
 }
