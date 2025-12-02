@@ -1,4 +1,4 @@
-// Firebase 구성 정보
+// Firebase 구성 정보 (변경 없음)
 const firebaseConfig = {
     apiKey: "AIzaSyABiutWTHs7ZQntghKODX8UDxo1z-DrfUE",
     authDomain: "holdemtimer-7087b.firebaseapp.com",
@@ -18,7 +18,7 @@ const settlementFirebaseConfig = {
     measurementId: "G-EQ5F9VXQWV"
 };
 
-// Firebase 초기화
+// Firebase 초기화 (변경 없음)
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const settlementApp = firebase.initializeApp(settlementFirebaseConfig, 'settlementApp');
@@ -66,11 +66,6 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('lock-btn').addEventListener('click', toggleLock);
-    
-    // 전체화면 버튼 및 이벤트 감지
-    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange); // Safari 대응
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -590,56 +585,7 @@ function buildSchedule(settings) {
     return schedule;
 }
 
-// 전체화면 토글 함수 (태블릿 호환성 강화)
-function toggleFullscreen() {
-    const btn = document.getElementById('fullscreen-btn');
-    const docEl = document.documentElement;
-    
-    // 현재 전체화면 상태인지 확인
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-
-    if (!isFullscreen) {
-        // 전체화면 진입 시도
-        const requestFullScreen = docEl.requestFullscreen || docEl.webkitRequestFullscreen || docEl.mozRequestFullScreen || docEl.msRequestFullscreen;
-        
-        if (requestFullScreen) {
-            requestFullScreen.call(docEl).then(() => {
-                document.body.classList.add('fullscreen-mode');
-                btn.textContent = '기존화면';
-            }).catch(err => {
-                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
-                // API 에러가 나더라도 CSS 스타일은 강제 적용
-                document.body.classList.add('fullscreen-mode');
-                btn.textContent = '기존화면';
-            });
-        } else {
-            // 전체화면 API를 지원하지 않는 기기 강제 CSS 적용
-            document.body.classList.add('fullscreen-mode');
-            btn.textContent = '기존화면';
-        }
-    } else {
-        // 전체화면 해제 시도
-        const exitFullScreen = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-        
-        if (exitFullScreen) {
-            exitFullScreen.call(document);
-        } else {
-            handleFullscreenChange();
-        }
-    }
-}
-
-// 전체화면 상태 변경 감지
-function handleFullscreenChange() {
-    const btn = document.getElementById('fullscreen-btn');
-    const isFullscreen = document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
-    
-    if (!isFullscreen) {
-        document.body.classList.remove('fullscreen-mode');
-        btn.textContent = '전체화면';
-    }
-}
-
+// ==================== 💡 수정된 부분 시작 💡 ====================
 async function showOutListModal() {
     if (!currentGameId) return;
     const listElement = document.getElementById('out-player-list');
@@ -656,15 +602,17 @@ async function showOutListModal() {
                 const playerName = doc.id;
                 const li = document.createElement('li');
 
+                // Create span for player name
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = playerName;
                 li.appendChild(nameSpan);
 
+                // Create restore button
                 const restoreButton = document.createElement('button');
                 restoreButton.textContent = '복귀';
-                restoreButton.classList.add('restore-btn'); 
-                restoreButton.dataset.playerName = playerName; 
-                restoreButton.addEventListener('click', handleRestorePlayer); 
+                restoreButton.classList.add('restore-btn'); // Add class for styling
+                restoreButton.dataset.playerName = playerName; // Store player name
+                restoreButton.addEventListener('click', handleRestorePlayer); // Attach event listener
                 li.appendChild(restoreButton);
 
                 listElement.appendChild(li);
@@ -676,6 +624,7 @@ async function showOutListModal() {
     }
 }
 
+// 복귀 버튼 클릭 처리 함수
 async function handleRestorePlayer(event) {
     const button = event.target;
     const playerName = button.dataset.playerName;
@@ -685,14 +634,17 @@ async function handleRestorePlayer(event) {
     if (confirm(`'${playerName}'님을 복귀시키겠습니까?`)) {
         try {
             await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).delete();
+            // 모달을 닫고, 성공 메시지 표시
             document.getElementById('out-list-modal').style.display = 'none';
             alert(`'${playerName}'님이 복귀되었습니다.`);
+            // updateOutedPlayerUI가 Firestore 리스너에 의해 자동으로 호출되어 UI가 갱신됩니다.
         } catch (error) {
             console.error("복귀 처리 중 오류 발생:", error);
             alert("플레이어 복귀 처리 중 오류가 발생했습니다.");
         }
     }
 }
+// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function loadGameList() {
     const gameListDiv = document.getElementById('game-list');
@@ -865,7 +817,7 @@ async function changeLevel(direction) {
     const {
         currentLevelIndex
     } = calculateStateFromElapsed(elapsedSeconds, schedule);
-    
+
     let targetLevelIndex = currentLevelIndex + direction;
     if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) return;
 
@@ -912,7 +864,7 @@ async function seekTime(value, finalUpdate) {
     const levelDuration = schedule[currentLevelIndex].duration * 60;
     const timeIntoLevel = levelDuration > 0 ? levelDuration * value : 0;
     const targetElapsedSeconds = cumulativeSeconds + timeIntoLevel;
-    
+
     if (finalUpdate) {
         if (gameData.isPaused) {
             await gameRef.update({ elapsedSecondsOnPause: targetElapsedSeconds });

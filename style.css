@@ -213,13 +213,11 @@ h1, h2 {
     font-size: 2.5rem;
     margin: 0;
 }
-
 .timer-wrapper {
     position: relative;
     display: inline-block;
 }
 
-/* PAUSED 표시 스타일 */
 #paused-indicator {
     display: none;
     position: absolute;
@@ -249,12 +247,11 @@ h1, h2 {
     line-height: 1;
 }
 
-/* 블라인드 정보 스타일 */
 #blinds-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     color: #ffffff;
     margin: 5px 0 0 0;
     font-weight: bold;
@@ -275,10 +272,11 @@ h1, h2 {
     flex-shrink: 0;
 }
 
+.blind-values { }
+
 #next-blinds-label {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: #e0e0e0;
-    font-weight: bold;
 }
 
 .controls-area {
@@ -322,7 +320,7 @@ h1, h2 {
     justify-content: flex-start;
 }
 
-#go-home-btn, #sound-toggle-btn, #out-list-btn, #lock-btn, #fullscreen-btn {
+#go-home-btn, #sound-toggle-btn, #out-list-btn, #lock-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
     background-color: #444;
@@ -419,31 +417,34 @@ h1, h2 {
     max-height: 50vh;
     overflow-y: auto;
 }
+/* ==================== 💡 수정된 부분 시작 💡 ==================== */
 #out-player-list li {
     background-color: #444;
-    padding: 10px 15px;
+    padding: 10px 15px; /* 양옆 패딩 추가 */
     margin-bottom: 5px;
     border-radius: 4px;
     font-size: 1.1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; /* Flexbox 사용 */
+    justify-content: space-between; /* 이름과 버튼 양쪽 정렬 */
+    align-items: center; /* 세로 중앙 정렬 */
 }
 
 /* 복귀 버튼 스타일 */
 .restore-btn {
     padding: 4px 8px;
     font-size: 0.8rem;
-    background-color: #c9302c;
-    color: white;
-    border: 1px solid #ac2925;
+    background-color: #c9302c; /* 빨간 배경 */
+    color: white; /* 흰 글씨 */
+    border: 1px solid #ac2925; /* 약간 어두운 빨간 테두리 */
     border-radius: 4px;
     cursor: pointer;
-    margin-left: 10px;
+    margin-left: 10px; /* 이름과의 간격 */
 }
+
 .restore-btn:hover {
-    background-color: #ac2925;
+    background-color: #ac2925; /* 호버 시 더 어두운 빨강 */
 }
+/* ==================== 💡 수정된 부분 끝 💡 ==================== */
 
 .preset-buttons {
     margin-top: 15px;
@@ -489,132 +490,4 @@ h1, h2 {
     height: 1px;
     opacity: 0;
     pointer-events: none;
-}
-
-/* --- 전체화면 모드 스타일 (vmin 단위로 완벽 반응형 구현) --- */
-body.fullscreen-mode #timer-page {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh; /* 모바일 주소창 대응 */
-    max-width: none;
-    border-radius: 0;
-    z-index: 9999;
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
-    background-color: #1e1e1e !important;
-}
-
-/* 숨겨야 할 요소들 */
-body.fullscreen-mode .left-column,
-body.fullscreen-mode .table-container,
-body.fullscreen-mode h1,
-body.fullscreen-mode .button-group,
-body.fullscreen-mode #game-list-container {
-    display: none !important;
-}
-
-body.fullscreen-mode .timer-grid-layout {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    width: 100%;
-    grid-gap: 0;
-    justify-content: space-between;
-}
-
-/* 상단 영역 (레벨, 타이머, 블라인드) */
-body.fullscreen-mode .top-right-section {
-    flex-grow: 1;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    margin: 0;
-    padding: 0;
-}
-
-body.fullscreen-mode .timer-display-area {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100%;
-    width: 100%;
-    margin: 0;
-}
-
-/* timer-wrapper: 중앙 정렬 */
-body.fullscreen-mode .timer-wrapper {
-    display: block;
-    width: 100%;
-    text-align: center;
-}
-
-/* ✅ 폰트 사이즈를 vmin(화면 짧은 변 기준)으로 설정하여 짤림 방지 */
-body.fullscreen-mode #timer-label {
-    font-size: 45vmin; /* 화면 최소 변의 45% */
-    margin: 0;
-    line-height: 1;
-}
-
-body.fullscreen-mode #level-label {
-    font-size: 10vmin;
-    margin-bottom: 2vh;
-}
-
-body.fullscreen-mode #blinds-label {
-    font-size: 8vmin;
-    margin-top: 2vh;
-}
-
-body.fullscreen-mode .blind-icon {
-    width: 1.5em;
-    height: 1.5em;
-    font-size: 1em;
-}
-
-body.fullscreen-mode #next-blinds-label {
-    font-size: 5vmin;
-    margin-top: 1vh;
-}
-
-/* 하단 컨트롤 영역 */
-body.fullscreen-mode .bottom-section {
-    flex-grow: 0;
-    padding: 20px;
-    background-color: transparent;
-    width: 100%;
-    box-sizing: border-box;
-    padding-bottom: max(20px, env(safe-area-inset-bottom));
-}
-
-body.fullscreen-mode .bottom-controls {
-    justify-content: center;
-    gap: 20px;
-}
-
-body.fullscreen-mode #fullscreen-btn {
-    padding: 15px 30px;
-    font-size: 1.5rem;
-    background-color: #555;
-    border: 2px solid #777;
-    transition: background-color 0.2s;
-}
-body.fullscreen-mode #fullscreen-btn:hover {
-    background-color: #777;
-}
-
-/* PAUSED 표시도 vmin으로 비율 유지 */
-body.fullscreen-mode #paused-indicator {
-    font-size: 15vmin;
-    padding: 1vmin 4vmin;
-    border-width: 1vmin;
-    min-width: 40vmin;
 }
