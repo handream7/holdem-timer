@@ -162,7 +162,6 @@ h1, h2 {
     background-color: #1e1e1e;
     padding: 15px;
     border-radius: 8px;
-    position: relative; /* 전체화면 시 기준점 */
 }
 .bottom-section {
     grid-area: bottom;
@@ -214,13 +213,11 @@ h1, h2 {
     font-size: 2.5rem;
     margin: 0;
 }
-
 .timer-wrapper {
     position: relative;
     display: inline-block;
 }
 
-/* PAUSED 표시 스타일 */
 #paused-indicator {
     display: none;
     position: absolute;
@@ -250,12 +247,11 @@ h1, h2 {
     line-height: 1;
 }
 
-/* 블라인드 정보 스타일 */
 #blinds-label {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.8rem;
+    font-size: 1.7rem;
     color: #ffffff;
     margin: 5px 0 0 0;
     font-weight: bold;
@@ -276,10 +272,11 @@ h1, h2 {
     flex-shrink: 0;
 }
 
+.blind-values { }
+
 #next-blinds-label {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     color: #e0e0e0;
-    font-weight: bold;
 }
 
 .controls-area {
@@ -323,7 +320,7 @@ h1, h2 {
     justify-content: flex-start;
 }
 
-#go-home-btn, #sound-toggle-btn, #out-list-btn, #lock-btn, #enter-fullscreen-btn {
+#go-home-btn, #sound-toggle-btn, #out-list-btn, #lock-btn {
     padding: 6px 12px;
     font-size: 0.8rem;
     background-color: #444;
@@ -420,31 +417,34 @@ h1, h2 {
     max-height: 50vh;
     overflow-y: auto;
 }
+/* ==================== 💡 수정된 부분 시작 💡 ==================== */
 #out-player-list li {
     background-color: #444;
-    padding: 10px 15px;
+    padding: 10px 15px; /* 양옆 패딩 추가 */
     margin-bottom: 5px;
     border-radius: 4px;
     font-size: 1.1rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    display: flex; /* Flexbox 사용 */
+    justify-content: space-between; /* 이름과 버튼 양쪽 정렬 */
+    align-items: center; /* 세로 중앙 정렬 */
 }
 
 /* 복귀 버튼 스타일 */
 .restore-btn {
     padding: 4px 8px;
     font-size: 0.8rem;
-    background-color: #c9302c;
-    color: white;
-    border: 1px solid #ac2925;
+    background-color: #c9302c; /* 빨간 배경 */
+    color: white; /* 흰 글씨 */
+    border: 1px solid #ac2925; /* 약간 어두운 빨간 테두리 */
     border-radius: 4px;
     cursor: pointer;
-    margin-left: 10px;
+    margin-left: 10px; /* 이름과의 간격 */
 }
+
 .restore-btn:hover {
-    background-color: #ac2925;
+    background-color: #ac2925; /* 호버 시 더 어두운 빨강 */
 }
+/* ==================== 💡 수정된 부분 끝 💡 ==================== */
 
 .preset-buttons {
     margin-top: 15px;
@@ -490,113 +490,4 @@ h1, h2 {
     height: 1px;
     opacity: 0;
     pointer-events: none;
-}
-
-/* =========================================================================
-   [전체화면 모드 스타일 - FIXED OVERLAY 방식]
-   이 방식은 기존 레이아웃 구조를 무시하고 화면 최상단에 요소를 강제로 띄웁니다.
-   ========================================================================= */
-
-/* 1. 시계 영역(.top-right-section)을 화면 전체로 확장하고 최상위로 올림 */
-body.fullscreen-mode .top-right-section {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100vw !important;
-    height: 100vh !important;
-    height: 100dvh !important; /* 모바일 주소창 대응 */
-    background-color: #1e1e1e !important;
-    z-index: 99999 !important; /* 모든 요소 위에 표시 */
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    padding: 0 !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-}
-
-/* 2. 전체화면 시 불필요한 조작 버튼 숨김 */
-body.fullscreen-mode .controls-area {
-    display: none !important;
-}
-
-/* 3. 글자 크기 최적화 (vmin 단위: 가로/세로 중 작은 쪽 기준) */
-body.fullscreen-mode .timer-display-area {
-    width: 100% !important;
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: center !important;
-    align-items: center !important;
-    margin: 0 !important;
-}
-
-body.fullscreen-mode .timer-wrapper {
-    display: block !important;
-    width: 100% !important;
-    text-align: center !important;
-}
-
-body.fullscreen-mode #timer-label {
-    font-size: 40vmin !important; /* 화면 꽉 차게 */
-    margin: 0 !important;
-    line-height: 1 !important;
-}
-
-body.fullscreen-mode #level-label {
-    font-size: 10vmin !important;
-    margin-bottom: 2vh !important;
-}
-
-body.fullscreen-mode #blinds-label {
-    font-size: 8vmin !important;
-    margin-top: 2vh !important;
-}
-
-body.fullscreen-mode .blind-icon {
-    width: 1.5em !important;
-    height: 1.5em !important;
-    font-size: 1em !important;
-}
-
-body.fullscreen-mode #next-blinds-label {
-    font-size: 5vmin !important;
-    margin-top: 1vh !important;
-}
-
-/* PAUSED 표시 */
-body.fullscreen-mode #paused-indicator {
-    font-size: 15vmin !important;
-    padding: 1vmin 4vmin !important;
-    border-width: 1vmin !important;
-    min-width: 40vmin !important;
-}
-
-/* 4. '기존화면' 복귀 버튼 스타일 (독립적 위치) */
-#exit-fullscreen-btn {
-    display: none; /* 기본적으로 숨김 */
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    z-index: 100000 !important; /* 시계보다 더 위에 */
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    background-color: #555;
-    color: #fff;
-    border: 2px solid #777;
-    border-radius: 10px;
-    cursor: pointer;
-    opacity: 0.7;
-    transition: opacity 0.3s;
-}
-
-#exit-fullscreen-btn:hover {
-    opacity: 1;
-}
-
-/* 전체화면 모드일 때만 복귀 버튼 보이기 */
-body.fullscreen-mode #exit-fullscreen-btn {
-    display: block !important;
 }
