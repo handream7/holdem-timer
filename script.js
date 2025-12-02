@@ -1,4 +1,4 @@
-// Firebase 구성 정보 (변경 없음)
+// Firebase 구성 정보
 const firebaseConfig = {
     apiKey: "AIzaSyABiutWTHs7ZQntghKODX8UDxo1z-DrfUE",
     authDomain: "holdemtimer-7087b.firebaseapp.com",
@@ -18,7 +18,7 @@ const settlementFirebaseConfig = {
     measurementId: "G-EQ5F9VXQWV"
 };
 
-// Firebase 초기화 (변경 없음)
+// Firebase 초기화
 firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const settlementApp = firebase.initializeApp(settlementFirebaseConfig, 'settlementApp');
@@ -66,6 +66,10 @@ function setupEventListeners() {
     document.getElementById('heads-up-btn').addEventListener('click', toggleHeadsUp);
     document.getElementById('sound-toggle-btn').addEventListener('click', toggleSound);
     document.getElementById('lock-btn').addEventListener('click', toggleLock);
+    
+    // 전체화면 버튼 및 이벤트 감지
+    document.getElementById('fullscreen-btn').addEventListener('click', toggleFullscreen);
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
 
     const modal = document.getElementById('out-list-modal');
     document.getElementById('out-list-btn').addEventListener('click', showOutListModal);
@@ -585,7 +589,6 @@ function buildSchedule(settings) {
     return schedule;
 }
 
-// ==================== 💡 수정된 부분 시작 💡 ====================
 async function showOutListModal() {
     if (!currentGameId) return;
     const listElement = document.getElementById('out-player-list');
@@ -594,7 +597,7 @@ async function showOutListModal() {
     modal.style.display = 'flex';
     try {
         const querySnapshot = await gamesCollection.doc(currentGameId).collection('outedPlayers').orderBy('outTime', 'desc').get();
-        listElement.innerHTML = ''; // Clear previous list
+        listElement.innerHTML = ''; 
         if (querySnapshot.empty) {
             listElement.innerHTML = '<li>Out 처리된 플레이어가 없습니다.</li>';
         } else {
@@ -602,17 +605,15 @@ async function showOutListModal() {
                 const playerName = doc.id;
                 const li = document.createElement('li');
 
-                // Create span for player name
                 const nameSpan = document.createElement('span');
                 nameSpan.textContent = playerName;
                 li.appendChild(nameSpan);
 
-                // Create restore button
                 const restoreButton = document.createElement('button');
                 restoreButton.textContent = '복귀';
-                restoreButton.classList.add('restore-btn'); // Add class for styling
-                restoreButton.dataset.playerName = playerName; // Store player name
-                restoreButton.addEventListener('click', handleRestorePlayer); // Attach event listener
+                restoreButton.classList.add('restore-btn'); 
+                restoreButton.dataset.playerName = playerName; 
+                restoreButton.addEventListener('click', handleRestorePlayer); 
                 li.appendChild(restoreButton);
 
                 listElement.appendChild(li);
@@ -624,7 +625,6 @@ async function showOutListModal() {
     }
 }
 
-// 복귀 버튼 클릭 처리 함수
 async function handleRestorePlayer(event) {
     const button = event.target;
     const playerName = button.dataset.playerName;
@@ -634,17 +634,14 @@ async function handleRestorePlayer(event) {
     if (confirm(`'${playerName}'님을 복귀시키겠습니까?`)) {
         try {
             await gamesCollection.doc(currentGameId).collection('outedPlayers').doc(playerName).delete();
-            // 모달을 닫고, 성공 메시지 표시
             document.getElementById('out-list-modal').style.display = 'none';
             alert(`'${playerName}'님이 복귀되었습니다.`);
-            // updateOutedPlayerUI가 Firestore 리스너에 의해 자동으로 호출되어 UI가 갱신됩니다.
         } catch (error) {
             console.error("복귀 처리 중 오류 발생:", error);
             alert("플레이어 복귀 처리 중 오류가 발생했습니다.");
         }
     }
 }
-// ==================== 💡 수정된 부분 끝 💡 ====================
 
 function loadGameList() {
     const gameListDiv = document.getElementById('game-list');
@@ -817,7 +814,7 @@ async function changeLevel(direction) {
     const {
         currentLevelIndex
     } = calculateStateFromElapsed(elapsedSeconds, schedule);
-
+    
     let targetLevelIndex = currentLevelIndex + direction;
     if (targetLevelIndex < 0 || targetLevelIndex >= schedule.length) return;
 
@@ -864,7 +861,7 @@ async function seekTime(value, finalUpdate) {
     const levelDuration = schedule[currentLevelIndex].duration * 60;
     const timeIntoLevel = levelDuration > 0 ? levelDuration * value : 0;
     const targetElapsedSeconds = cumulativeSeconds + timeIntoLevel;
-
+    
     if (finalUpdate) {
         if (gameData.isPaused) {
             await gameRef.update({ elapsedSecondsOnPause: targetElapsedSeconds });
@@ -953,4 +950,33 @@ function getDefaultBlinds() {
         { level: 23, small: 15000, big: 30000, ante: 30000, duration: 6 }, { level: 24, small: 20000, big: 40000, ante: 40000, duration: 6 },
         { level: 25, small: 25000, big: 50000, ante: 50000, duration: 6 }, { level: 26, small: 30000, big: 60000, ante: 60000, duration: 6 }
     ];
+}
+
+// 전체화면 토글 함수
+function toggleFullscreen() {
+    const btn = document.getElementById('fullscreen-btn');
+    
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            document.body.classList.add('fullscreen-mode');
+            btn.textContent = '기존화면';
+        }).catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            document.body.classList.add('fullscreen-mode');
+            btn.textContent = '기존화면';
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+// 전체화면 상태 변경 감지 (ESC키 대응)
+function handleFullscreenChange() {
+    const btn = document.getElementById('fullscreen-btn');
+    if (!document.fullscreenElement) {
+        document.body.classList.remove('fullscreen-mode');
+        btn.textContent = '전체화면';
+    }
 }
